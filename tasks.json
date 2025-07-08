@@ -1,0 +1,55 @@
+{
+  "sections": [
+    {
+      "id": "sec-1718000000001",
+      "title": "Code Project Checklist",
+      "collapsed": false,
+      "tasks": [
+        {
+          "id": "task-1718000000001",
+          "text": "Can't distinguish between multiple user chat bubbles",
+          "completed": true
+        },
+        {
+          "id": "task-1718000000002",
+          "text": "Doesn't have live stream",
+          "completed": false
+        },
+        {
+          "id": "task-1718000000003",
+          "text": "When closing, `trustedHTML` error shows up in console",
+          "completed": false
+        },
+        {
+          "id": "task-1718000000004",
+          "text": "The button in helper tools should be open/close chat fetcher",
+          "completed": false
+        }
+      ]
+    },
+    {
+      "id": "sec-1718000000002",
+      "title": "Model and Gen Settings",
+      "collapsed": false,
+      "tasks": [
+        {
+          "id": "task-1718000000005",
+          "text": "Add Flash Lite settings support: Gemini 2.5 Flash-Lite Preview 06-17",
+          "completed": false
+        }
+      ]
+    },
+    {
+      "id": "sec-1718000000003",
+      "title": "Whole GUI",
+      "collapsed": true,
+      "tasks": [
+        {
+          "id": "task-1718000000006",
+          "text": "Add each section minimizing button, for tools, advanced settings",
+          "completed": false
+        }
+      ]
+    }
+  ]
+}
