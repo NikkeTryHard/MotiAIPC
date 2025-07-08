@@ -1,0 +1,29 @@
+# Set default behavior for all files to be text and use LF line endings.
+# This prevents issues between Windows and macOS/Linux developers.
+* text=auto eol=lf
+
+# Explicitly declare files that are text and should always have LF line endings.
+*.js text eol=lf
+*.mjs text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+.prettierrc.json text eol=lf
+.stylelintrc.json text eol=lf
+eslint.config.mjs text eol=lf
+
+# Declare files that are binary and should not be modified.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
