@@ -39,7 +39,7 @@
                     <span class="slider"></span>
                 </label>
                 <span class="theme-icon">🌙</span>
-                <button id="theme-color-btn" class="theme-color-btn" title="Change Accent Color">
+                <button id="theme-color-btn" class="theme-color-btn" title="Change Accent Color" aria-label="Change Accent Color">
                     <!-- SVG icon will be inserted by JS -->
                 </button>
             </div>
@@ -50,7 +50,7 @@
                 <div class="task-list-header">
                     <div id="task-tabs-nav" class="task-tabs-nav">
                         <!-- Tabs will be dynamically inserted here -->
-                        <button id="add-tab-btn" class="add-tab-btn" title="Add New Tab">+</button>
+                        <button id="add-tab-btn" class="add-tab-btn" title="Add New Tab" aria-label="Add New List">+</button>
                     </div>
 
                     <div class="progress-text">0/0 Tasks Completed</div>
@@ -75,9 +75,9 @@
                 <div class="schedule-top-section">
                     <div class="calendar-container">
                         <div class="calendar-header">
-                            <button id="prev-month-btn" class="calendar-nav-btn"><</button>
+                            <button id="prev-month-btn" class="calendar-nav-btn" aria-label="Previous Month"><</button>
                             <h2 id="month-year-header" class="calendar-title">July 2024</h2>
-                            <button id="next-month-btn" class="calendar-nav-btn">></button>
+                            <button id="next-month-btn" class="calendar-nav-btn" aria-label="Next Month">></button>
                         </div>
                         <div class="calendar-grid-container">
                             <div class="calendar-weekdays">
@@ -99,7 +99,7 @@
                 <div id="timeline-view" class="timeline-view">
                     <div class="timeline-header">
                         <h3 id="timeline-date-header">Schedule for July 10</h3>
-                        <button id="add-event-button" class="add-event-btn" title="Add New Event">+</button>
+                        <button id="add-event-button" class="add-event-btn" title="Add New Event" aria-label="Add New Event">+</button>
                     </div>
                     <div id="all-day-events-container" class="all-day-events-container">
                         <!-- All-day events will be inserted here -->
@@ -213,6 +213,9 @@
         <div class="time-picker-column" id="time-picker-minutes"></div>
         <div class="time-picker-column" id="time-picker-period"></div>
     </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
 
     <script type="module" src="js/main.js" defer></script>
 </body>

@@ -1,8 +1,7 @@
 import { dom, icons } from './config.js';
-import { state, calendarState, loadState, getActiveTab, findTaskAndSectionById, saveState, activeInlineEdit } from './state.js';
-import { renderAll, updateTimeIndicator, scrollToCurrentTime, showContextMenu, hideContextMenu, initTimePicker, openTimePicker } from './ui.js';
+import { state, calendarState, loadState, getActiveTab, findTaskInfoById, findSectionInfoById, actions, activeInlineEdit } from './state.js';
+import { renderAll, updateTimeIndicator, scrollToCurrentTime, showContextMenu, hideContextMenu, initTimePicker, openTimePicker, startInlineEdit, renderActiveTabContent } from './ui.js';
 import * as handlers from './handlers.js';
-import { closeEventModal } from './modals.js';
 
 // =================================================================================
 // --- EVENT HANDLERS & INITIALIZATION ---
@@ -15,38 +14,23 @@ function setupEventListeners() {
     dom.themeToggle.addEventListener('change', handlers.handleThemeToggle);
     dom.themeColorBtn.addEventListener('click', handlers.handleThemeColorChange);
     document.addEventListener('click', (e) => {
-        if (!e.target.closest('.custom-context-menu')) {
-            hideContextMenu();
-        }
-        if (activeInlineEdit.cleanup && !e.target.closest('.inline-edit-input')) {
-            activeInlineEdit.cleanup();
-        }
+        if (!e.target.closest('.custom-context-menu')) hideContextMenu();
+        if (activeInlineEdit.cleanup && !e.target.closest('.inline-edit-input')) activeInlineEdit.cleanup();
     });
 
     // --- Task List & Header Listeners ---
     dom.addTabBtn.addEventListener('click', handlers.handleAddTab);
     
-    // Context menu for the main title
     dom.mainTitleText.addEventListener('contextmenu', e => {
         e.preventDefault();
         e.stopPropagation();
-        showContextMenu(e, [
-            {
-                label: 'Rename',
-                icon: icons.rename,
-                action: () => {
-                    handlers.startInlineEdit(dom.mainTitleText, (newTitle) => {
-                        const tab = getActiveTab();
-                        if (tab) {
-                            tab.mainTitle = newTitle;
-                            saveState();
-                        }
-                    });
-                }
-            }
-        ]);
+        const tab = getActiveTab();
+        if (!tab) return;
+        showContextMenu(e, [{
+            label: 'Rename', icon: icons.rename,
+            action: () => startInlineEdit(dom.mainTitleText, (newTitle) => actions.updateTab(tab.id, { mainTitle: newTitle }))
+        }]);
     });
-
 
     dom.taskTabsNav.addEventListener('click', e => {
         const tabEl = e.target.closest('.task-tab');
@@ -61,16 +45,10 @@ function setupEventListeners() {
         if (tabEl) {
             const tabId = tabEl.dataset.tabId;
             showContextMenu(e, [
-                { 
-                    label: 'Rename List', 
-                    icon: icons.rename, 
-                    action: () => {
-                        const titleEl = tabEl.querySelector('.tab-title');
-                        if (titleEl) {
-                            handlers.startInlineEdit(titleEl, (newTitle) => handlers.handleRenameTab(tabId, newTitle));
-                        }
-                    } 
-                },
+                { label: 'Rename List', icon: icons.rename, action: () => {
+                    const titleEl = tabEl.querySelector('.tab-title');
+                    if (titleEl) startInlineEdit(titleEl, (newTitle) => handlers.handleRenameTab(tabId, newTitle));
+                }},
                 { label: 'Export to JSON', icon: icons.export, action: () => handlers.handleExportTab(tabId) },
                 { type: 'divider' },
                 { label: 'Delete List', class: 'danger', icon: icons.delete, action: () => handlers.handleDeleteTab(tabId) }
@@ -84,18 +62,18 @@ function setupEventListeners() {
 
     dom.sectionsContainer.addEventListener('change', e => {
         if (e.target.matches('input[type="checkbox"]')) {
-            handlers.handleToggleTask(e.target);
+            const taskId = e.target.closest('li')?.dataset.id;
+            if(taskId) handlers.handleToggleTask(e.target, taskId);
         }
     });
 
     dom.sectionsContainer.addEventListener('click', e => {
         const target = e.target;
         const sectionEl = target.closest('.section');
-        
         if (target.closest('.add-task-btn')) {
             if (sectionEl) handlers.handleAddTask(sectionEl.dataset.id);
         } else if (target.closest('.toggle-section-btn')) {
-            if (sectionEl) handlers.handleToggleSection(sectionEl);
+            if (sectionEl) handlers.handleToggleSection(sectionEl, sectionEl.dataset.id);
         }
     });
 
@@ -106,23 +84,14 @@ function setupEventListeners() {
 
         if (taskEl) {
             const taskId = taskEl.dataset.id;
-            const { task } = findTaskAndSectionById(taskId);
+            const { task } = findTaskInfoById(taskId) || {};
             if (!task) return;
             
-            const menuItems = [
-                { 
-                    label: 'Edit Task', 
-                    icon: icons.rename, 
-                    action: () => handlers.handleEditTask(taskId)
-                }
-            ];
-
+            const menuItems = [{ label: 'Edit Task', icon: icons.rename, action: () => handlers.handleEditTask(taskId) }];
             if (task.deadlineEventId) {
                 const dateKey = handlers.formatDateKey(new Date(task.deadline));
                 const eventData = state.events[dateKey]?.find(evt => evt.id === task.deadlineEventId);
-                if (eventData) {
-                    menuItems.push({ label: 'Edit Deadline', icon: icons.deadline, action: () => handlers.processEventModal({ title: 'Edit Task Deadline', ...eventData, date: new Date(task.deadline) }) });
-                }
+                if (eventData) menuItems.push({ label: 'Edit Deadline', icon: icons.deadline, action: () => handlers.processEventModal({ title: 'Edit Task Deadline', ...eventData, date: new Date(task.deadline), taskId }) });
             } else {
                 menuItems.push({ label: 'Set Deadline', icon: icons.deadline, action: () => handlers.processEventModal({ title: 'Set Task Deadline', taskId: task.id, eventTitle: task.text, date: calendarState.selectedDate }) });
             }
@@ -135,25 +104,16 @@ function setupEventListeners() {
             const sectionEl = sectionHeader.closest('.section');
             const sectionId = sectionEl.dataset.id;
             showContextMenu(e, [
-                {
-                    label: 'Rename Section',
-                    icon: icons.rename,
-                    action: () => {
-                        const titleEl = sectionHeader.querySelector('.section-title span');
-                        if (titleEl) {
-                            handlers.startInlineEdit(titleEl, (newTitle) => handlers.handleRenameSection(sectionId, newTitle));
-                        }
-                    }
-                },
+                { label: 'Rename Section', icon: icons.rename, action: () => {
+                    const titleEl = sectionHeader.querySelector('.section-title span');
+                    if (titleEl) startInlineEdit(titleEl, (newTitle) => handlers.handleRenameSection(sectionId, newTitle));
+                }},
                 { label: 'Add Task to Section', icon: icons.add, action: () => handlers.handleAddTask(sectionId) },
                 { type: 'divider' },
                 { label: 'Delete Section', class: 'danger', icon: icons.delete, action: () => handlers.handleDeleteSection(sectionId, sectionEl) }
             ]);
         } else {
-            // Right-clicked on empty space
-            showContextMenu(e, [
-                { label: 'Add New Section', icon: icons.add, action: handlers.handleAddSection }
-            ]);
+            showContextMenu(e, [{ label: 'Add New Section', icon: icons.add, action: handlers.handleAddSection }]);
         }
     });
 
@@ -165,7 +125,7 @@ function setupEventListeners() {
     
     dom.timelineGrid.addEventListener('click', e => {
         const eventEl = e.target.closest('.timeline-event');
-        if (eventEl && eventEl.dataset.taskId) {
+        if (eventEl?.dataset.taskId) {
             handlers.navigateToTask(eventEl.dataset.taskId);
         } else if (!eventEl) {
             handlers.handleTimelineClick(e);
@@ -190,21 +150,12 @@ function setupEventListeners() {
 
     dom.summaryContent.addEventListener('click', e => {
         const summaryItem = e.target.closest('.summary-item[data-task-id]');
-        if (summaryItem) {
-            handlers.navigateToTask(summaryItem.dataset.taskId);
-        }
+        if (summaryItem) handlers.navigateToTask(summaryItem.dataset.taskId);
     });
 
     // --- Custom Time Picker Listeners ---
-    dom.eventModal.startTimeDisplay.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openTimePicker(e.target);
-    });
-    dom.eventModal.endTimeDisplay.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openTimePicker(e.target);
-    });
-
+    dom.eventModal.startTimeDisplay.addEventListener('click', (e) => { e.stopPropagation(); openTimePicker(e.target); });
+    dom.eventModal.endTimeDisplay.addEventListener('click', (e) => { e.stopPropagation(); openTimePicker(e.target); });
 
     // --- Drag & Drop Listeners ---
     document.addEventListener('dragstart', handlers.handleDragStart);

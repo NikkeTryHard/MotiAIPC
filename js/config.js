@@ -57,7 +57,8 @@ export const dom = {
         hours: document.getElementById('time-picker-hours'),
         minutes: document.getElementById('time-picker-minutes'),
         period: document.getElementById('time-picker-period'),
-    }
+    },
+    toastContainer: document.getElementById('toast-container'),
 };
 
 export const icons = {

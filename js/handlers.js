@@ -1,6 +1,6 @@
 import { dom, icons } from './config.js';
-import { state, calendarState, saveState, getActiveTab, findTaskAndSectionById, findTaskAndSectionAndTabById, activeInlineEdit } from './state.js';
-import { renderAll, renderTabs, renderActiveTabContent, renderCalendar, renderTimelineAndSummary, createSectionEl, createTaskEl, updateProgress, renderEmptyState, highlightTask } from './ui.js';
+import { state, calendarState, actions, getActiveTab, findTaskInfoById, findTabById } from './state.js';
+import { renderAll, renderTabs, renderActiveTabContent, renderCalendar, renderTimelineAndSummary, highlightTask, showToast, startInlineEdit, removeElementWithAnimation, addElement, updateTaskEl } from './ui.js';
 import { openPromptModal, openConfirmModal, openEventModal } from './modals.js';
 
 const COLOR_THEMES = ['default', 'velvet'];
@@ -12,7 +12,6 @@ export const formatDateKey = (date) => {
     const day = date.getDate().toString().padStart(2, '0');
     return `${year}-${month}-${day}`;
 };
-const generateId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
 // --- APP HANDLERS ---
 export function handleThemeToggle() {
@@ -29,55 +28,6 @@ export function handleThemeColorChange() {
     
     document.documentElement.setAttribute('data-color-theme', newTheme);
     localStorage.setItem('motiOSColorTheme', newTheme);
-    console.log(`MotiOS_THEME: Color theme changed to ${newTheme}`);
-}
-
-// --- INLINE EDITING HANDLER ---
-export function startInlineEdit(element, onSave) {
-    if (activeInlineEdit.cleanup) {
-        activeInlineEdit.cleanup();
-    }
-
-    element.style.display = 'none';
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.value = element.textContent.trim();
-    input.className = 'inline-edit-input';
-    element.parentNode.insertBefore(input, element.nextSibling);
-    input.focus();
-    input.select();
-
-    const cleanup = () => {
-        input.removeEventListener('blur', saveChanges);
-        input.removeEventListener('keydown', handleKey);
-        if (document.body.contains(input)) {
-            input.remove();
-        }
-        element.style.display = '';
-        activeInlineEdit.cleanup = null;
-    };
-
-    activeInlineEdit.cleanup = cleanup;
-
-    const saveChanges = () => {
-        const newValue = input.value.trim();
-        if (newValue) {
-            onSave(newValue);
-            element.textContent = newValue;
-        }
-        cleanup();
-    };
-
-    const handleKey = (e) => {
-        if (e.key === 'Enter') {
-            saveChanges();
-        } else if (e.key === 'Escape') {
-            cleanup();
-        }
-    };
-
-    input.addEventListener('blur', saveChanges);
-    input.addEventListener('keydown', handleKey);
 }
 
 // --- TABS, SECTIONS, & TASKS HANDLERS ---
@@ -87,117 +37,86 @@ export async function handleAddTab() {
             title: "New List",
             fields: [{ name: 'title', label: "Enter list name:", value: "New List", required: true }]
         });
-        const newTab = { id: generateId('tab'), title: result.title, mainTitle: "Today's Momentum", sections: [] };
-        state.tabs.push(newTab);
-        state.activeTabId = newTab.id;
-        saveState();
-        renderAll();
-    } catch (error) {
-        console.log("MotiOS_TABS: Add tab action cancelled by user.");
-    }
+        actions.addTab(result.title);
+        renderAll(); // Full render is acceptable for major structural changes like adding a tab
+        showToast(`List "${result.title}" created.`, 'success');
+    } catch (error) { /* User cancelled */ }
 }
 
 export function handleRenameTab(tabId, newTitle) {
-    const tab = state.tabs.find(t => t.id === tabId);
-    if (!tab) return;
-    tab.title = newTitle;
-    saveState();
-    // UI is updated by startInlineEdit, no full re-render needed
+    actions.updateTab(tabId, { title: newTitle });
+    // The UI is updated by startInlineEdit, no re-render needed
 }
 
 export async function handleDeleteTab(tabId) {
     if (state.tabs.length <= 1) {
-        alert("You cannot delete the last list.");
+        showToast("You cannot delete the last list.", "error");
         return;
     }
-    const tab = state.tabs.find(t => t.id === tabId);
+    const tab = findTabById(tabId);
     if (!tab) return;
 
     const confirmed = await openConfirmModal({
         title: "Delete List?",
-        message: `Are you sure you want to delete the list "${tab.title}" and all its contents? This action cannot be undone.`,
+        message: `Are you sure you want to delete "${tab.title}"? This cannot be undone.`,
     });
 
     if (confirmed) {
-        state.tabs = state.tabs.filter(t => t.id !== tabId);
-        if (state.activeTabId === tabId) {
-            state.activeTabId = state.tabs[0].id;
-        }
-        saveState();
+        const title = tab.title;
+        actions.deleteTab(tabId);
         renderAll();
+        showToast(`List "${title}" deleted.`, 'info');
     }
 }
 
 export function handleSwitchTab(tabId, callback) {
-    if (activeInlineEdit.cleanup) {
-        activeInlineEdit.cleanup();
-    }
     dom.sectionsContainer.classList.add('fade-out');
     setTimeout(() => {
-        state.activeTabId = tabId;
-        saveState();
+        actions.setActiveTab(tabId);
         renderTabs();
         renderActiveTabContent();
         dom.sectionsContainer.classList.remove('fade-out');
         if (callback) {
-            // Use another timeout to ensure DOM is ready after render
             setTimeout(callback, 50);
         }
-    }, 250); // Match CSS transition duration
+    }, 250);
 }
 
 export async function handleAddSection() {
-    const activeTab = getActiveTab();
-    if (!activeTab) return;
     try {
         const result = await openPromptModal({
             title: "New Section",
-            fields: [{ name: 'title', label: "Enter section name:", value: "New Section", required: true }]
+            fields: [{ name: 'title', label: "Section name:", value: "New Section", required: true }]
         });
-        const newSection = { id: generateId('sec'), title: result.title, collapsed: false, tasks: [] };
-        activeTab.sections.push(newSection);
-        saveState();
-
-        renderEmptyState();
-        const sectionEl = createSectionEl(newSection);
-        dom.sectionsContainer.appendChild(sectionEl);
-        updateProgress();
-    } catch (error) {
-        console.log("MotiOS_TASKS: Add section action cancelled.");
-    }
+        const newSection = actions.addSection(result.title);
+        if (newSection) {
+            addElement('section', newSection);
+            showToast(`Section "${result.title}" added.`, 'success');
+        }
+    } catch (error) { /* User cancelled */ }
 }
 
 export function handleRenameSection(sectionId, newTitle) {
-    const section = getActiveTab()?.sections.find(s => s.id === sectionId);
-    if (!section) return;
-    section.title = newTitle;
-    saveState();
+    actions.updateSection(sectionId, { title: newTitle });
 }
 
 export async function handleDeleteSection(sectionId, sectionEl) {
-    const section = getActiveTab()?.sections.find(s => s.id === sectionId);
+    const { section } = findSectionInfoById(sectionId) || {};
     if (!section) return;
     
     const confirmed = await openConfirmModal({
         title: "Delete Section?",
-        message: `Are you sure you want to delete the section "${section.title}" and all its tasks?`,
+        message: `Delete "${section.title}" and all its tasks?`,
     });
 
     if (confirmed) {
-        sectionEl.classList.add('removing');
-        sectionEl.addEventListener('animationend', () => {
-            getActiveTab().sections = getActiveTab().sections.filter(s => s.id !== sectionId);
-            saveState();
-            sectionEl.remove();
-            updateProgress();
-            renderEmptyState();
-        }, { once: true });
+        actions.deleteSection(sectionId);
+        removeElementWithAnimation(sectionEl);
+        showToast(`Section "${section.title}" deleted.`, 'info');
     }
 }
 
 export async function handleAddTask(sectionId) {
-    const section = getActiveTab()?.sections.find(s => s.id === sectionId);
-    if (!section) return;
     try {
         const result = await openPromptModal({
             title: "New Task",
@@ -206,23 +125,15 @@ export async function handleAddTask(sectionId) {
                 { name: 'info', label: "Info (Optional):", value: "" }
             ]
         });
-        const newTask = { id: generateId('task'), text: result.text, info: result.info, completed: false };
-        section.tasks.push(newTask);
-        saveState();
-
-        const taskEl = createTaskEl(newTask);
-        const checklistEl = document.querySelector(`.section[data-id="${sectionId}"] .checklist`);
-        if (checklistEl) {
-            checklistEl.appendChild(taskEl);
+        const newTask = actions.addTask(sectionId, result);
+        if (newTask) {
+            addElement('task', newTask, sectionId);
         }
-        updateProgress();
-    } catch (error) {
-        console.log("MotiOS_TASKS: Add task action cancelled.");
-    }
+    } catch (error) { /* User cancelled */ }
 }
 
 export async function handleEditTask(taskId) {
-    const { task } = findTaskAndSectionById(taskId);
+    const { task } = findTaskInfoById(taskId) || {};
     if (!task) return;
     try {
         const result = await openPromptModal({
@@ -232,87 +143,56 @@ export async function handleEditTask(taskId) {
                 { name: 'info', label: "Info (Optional):", value: task.info || "" }
             ]
         });
-        task.text = result.text;
-        task.info = result.info;
-        saveState();
-        renderActiveTabContent(); // Re-render to show changes
-    } catch (error) {
-        console.log("MotiOS_TASKS: Edit task action cancelled.");
-    }
+        const updatedTask = actions.updateTask(taskId, result);
+        updateTaskEl(taskId, updatedTask);
+    } catch (error) { /* User cancelled */ }
 }
 
 export async function handleDeleteTask(taskId, taskEl) {
-    const { task, section } = findTaskAndSectionById(taskId);
-    if (!task || !section) return;
+    const { task } = findTaskInfoById(taskId) || {};
+    if (!task) return;
 
     const confirmed = await openConfirmModal({
         title: "Delete Task?",
-        message: `Are you sure you want to delete the task: "${task.text}"?`,
+        message: `Delete task: "${task.text}"?`,
     });
 
     if (confirmed) {
         if (task.deadlineEventId) {
             const dateKey = formatDateKey(new Date(task.deadline));
-            if (state.events[dateKey]) {
-                state.events[dateKey] = state.events[dateKey].filter(evt => evt.id !== task.deadlineEventId);
-                if (state.events[dateKey].length === 0) {
-                    delete state.events[dateKey];
-                }
-                renderCalendar();
-                renderTimelineAndSummary();
-            }
+            actions.deleteEvent(task.deadlineEventId, dateKey);
+            renderCalendar();
+            renderTimelineAndSummary();
         }
-
-        taskEl.classList.add('removing');
-        taskEl.addEventListener('animationend', () => {
-            section.tasks = section.tasks.filter(t => t.id !== taskId);
-            saveState();
-            taskEl.remove();
-            updateProgress();
-        }, { once: true });
+        actions.deleteTask(taskId);
+        removeElementWithAnimation(taskEl);
     }
 }
 
-export function handleToggleTask(checkbox) {
+export function handleToggleTask(checkbox, taskId) {
+    const updatedTask = actions.updateTask(taskId, { completed: checkbox.checked });
     const li = checkbox.closest('li');
-    if (!li) return;
-    const { task } = findTaskAndSectionById(li.dataset.id);
-    if (task) {
-        task.completed = checkbox.checked;
-        li.classList.toggle('completed', task.completed);
-        saveState();
-        updateProgress();
-    }
+    li.classList.toggle('completed', updatedTask.completed);
+    // No need for a full re-render, just update progress
+    renderActiveTabContent(true); // partial render
 }
 
-export function handleToggleSection(sectionEl) {
-    if (!sectionEl) return;
-    const sectionId = sectionEl.dataset.id;
-    const sectionData = getActiveTab()?.sections.find(s => s.id === sectionId);
-    if (sectionData) {
-        sectionData.collapsed = !sectionData.collapsed;
-        sectionEl.classList.toggle('collapsed', sectionData.collapsed);
-        saveState();
+export function handleToggleSection(sectionEl, sectionId) {
+    const { section } = findSectionInfoById(sectionId) || {};
+    if (section) {
+        const newCollapsedState = !section.collapsed;
+        actions.updateSection(sectionId, { collapsed: newCollapsedState });
+        sectionEl.classList.toggle('collapsed', newCollapsedState);
     }
 }
 
 export function handleExportTab(tabId) {
-    const tab = state.tabs.find(t => t.id === tabId);
+    const tab = findTabById(tabId);
     if (!tab) return;
-    const cleanData = {
-        title: tab.title,
-        mainTitle: tab.mainTitle,
-        sections: tab.sections.map(section => ({
-            title: section.title,
-            collapsed: section.collapsed,
-            tasks: section.tasks.map(task => ({
-                text: task.text,
-                completed: task.completed,
-                deadline: task.deadline || undefined
-            }))
-        }))
-    };
-    const jsonString = JSON.stringify(cleanData, null, 2);
+    const cleanData = JSON.parse(JSON.stringify(tab)); // Deep copy to remove observers/proxies
+    const { id, ...dataToExport } = cleanData; // Exclude internal ID
+    
+    const jsonString = JSON.stringify(dataToExport, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -322,55 +202,29 @@ export function handleExportTab(tabId) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    console.log(`MotiOS_EXPORT: Exported tab "${tab.title}"`);
+    showToast(`Exported "${tab.title}".`, 'success');
 }
 
 export function handleImportTab() {
-    console.log("MotiOS_IMPORT: Initiating tab import.");
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'application/json';
     input.onchange = e => {
         const file = e.target.files[0];
-        if (!file) {
-            console.log("MotiOS_IMPORT: No file selected.");
-            return;
-        }
+        if (!file) return;
         const reader = new FileReader();
         reader.onload = readerEvent => {
             try {
-                const content = readerEvent.target.result;
-                const data = JSON.parse(content);
-
+                const data = JSON.parse(readerEvent.target.result);
                 if (!data.title || !Array.isArray(data.sections)) {
-                    throw new Error("Invalid JSON format for a MotiOS list.");
+                    throw new Error("Invalid MotiOS list format.");
                 }
-
-                const newTab = {
-                    id: generateId('tab'),
-                    title: data.title || "Imported List",
-                    mainTitle: data.mainTitle || "Today's Momentum",
-                    sections: data.sections.map(section => ({
-                        id: generateId('sec'),
-                        title: section.title || "Imported Section",
-                        collapsed: section.collapsed || false,
-                        tasks: (section.tasks || []).map(task => ({
-                            id: generateId('task'),
-                            text: task.text || "Imported Task",
-                            completed: task.completed || false,
-                            deadline: task.deadline || undefined,
-                        }))
-                    }))
-                };
-
-                state.tabs.push(newTab);
-                state.activeTabId = newTab.id;
-                saveState();
+                const newTab = actions.importTab(data);
                 renderAll();
-                console.log(`MotiOS_IMPORT: Successfully imported list "${newTab.title}".`);
+                showToast(`Successfully imported "${newTab.title}".`, 'success');
             } catch (error) {
                 console.error("MotiOS_IMPORT: Failed to import file.", error);
-                alert(`Error importing file: ${error.message}`);
+                showToast(`Error importing: ${error.message}`, "error");
             }
         };
         reader.readAsText(file);
@@ -397,7 +251,7 @@ export function handleDateSelect(e) {
 export function handleTimelineClick(e) {
     const rect = dom.timelineGrid.getBoundingClientRect();
     const y = e.clientY - rect.top;
-    const pixelsPerHour = 60;
+    const pixelsPerHour = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--timeline-hour-height'));
     const hourDecimal = y / pixelsPerHour;
     const hour = Math.floor(hourDecimal);
     const minute = Math.floor((hourDecimal - hour) * 60);
@@ -423,83 +277,36 @@ export async function processEventModal(config) {
         const result = await openEventModal(config);
 
         if (result.action === 'save') {
-            const newEvent = result.data;
-            const { id, taskId, dateKey, isAllDay } = newEvent;
-            
-            if (!state.events[dateKey]) state.events[dateKey] = [];
-            const eventIndex = state.events[dateKey].findIndex(evt => evt.id === id);
-            
-            const eventToSave = { ...newEvent };
-            delete eventToSave.dateKey;
-            delete eventToSave.isAllDay;
-
-            if (eventIndex > -1) {
-                state.events[dateKey][eventIndex] = eventToSave;
-            } else {
-                state.events[dateKey].push(eventToSave);
-            }
-
-            if (taskId) {
-                const { task } = findTaskAndSectionAndTabById(taskId);
-                if (task) {
-                    task.deadline = isAllDay ? `${dateKey}T00:00` : `${dateKey}T${eventToSave.startTime}`;
-                    task.deadlineEventId = id;
-                }
-            }
-            
-            saveState();
-            renderCalendar();
-            renderTimelineAndSummary();
-            if (taskId) renderActiveTabContent();
-
+            actions.saveEvent(result.data);
+            const { task } = findTaskInfoById(result.data.taskId) || {};
+            if (task) updateTaskEl(task.id, task);
         } else if (result.action === 'delete') {
-            const { eventId, dateKey } = result.data;
+            const { eventId, dateKey, taskId } = result.data;
             const confirmed = await openConfirmModal({
                 title: "Delete Event?",
-                message: "Are you sure you want to delete this event? This action cannot be undone.",
+                message: "Are you sure you want to delete this event?",
             });
-
             if (confirmed) {
-                if (!state.events[dateKey]) return;
-                const eventIndex = state.events[dateKey].findIndex(evt => evt.id === eventId);
-                if (eventIndex > -1) {
-                    const [deletedEvent] = state.events[dateKey].splice(eventIndex, 1);
-                    if (state.events[dateKey].length === 0) delete state.events[dateKey];
-                    
-                    let taskWasAffected = false;
-                    if (deletedEvent.taskId) {
-                        const { task } = findTaskAndSectionAndTabById(deletedEvent.taskId);
-                        if (task) {
-                            delete task.deadline;
-                            delete task.deadlineEventId;
-                            taskWasAffected = true;
-                        }
-                    }
-                    
-                    saveState();
-                    renderCalendar();
-                    renderTimelineAndSummary();
-                    if (taskWasAffected) renderActiveTabContent();
-                }
+                actions.deleteEvent(eventId, dateKey);
+                const { task } = findTaskInfoById(taskId) || {};
+                if (task) updateTaskEl(task.id, task);
             }
         }
-    } catch (error) {
-        console.log(`MotiOS_MODAL: ${error.message}`);
-    }
+        renderCalendar();
+        renderTimelineAndSummary();
+
+    } catch (error) { /* User cancelled */ }
 }
 
 export function navigateToTask(taskId) {
-    console.log(`MotiOS_NAV: Navigating to task ${taskId}`);
-    const { tab } = findTaskAndSectionAndTabById(taskId);
-    if (!tab) {
-        console.error(`MotiOS_NAV: Task ${taskId} not found in any tab.`);
+    const { parentTab } = findTaskInfoById(taskId) || {};
+    if (!parentTab) {
+        showToast("Could not find the requested task.", "error");
         return;
     }
 
-    if (tab.id !== state.activeTabId) {
-        handleSwitchTab(tab.id, () => {
-            highlightTask(taskId);
-        });
+    if (parentTab.id !== state.activeTabId) {
+        handleSwitchTab(parentTab.id, () => highlightTask(taskId));
     } else {
         highlightTask(taskId);
     }
@@ -515,9 +322,7 @@ export function handleDragStart(e) {
 }
 
 export function handleDragEnd() {
-    if (draggedItem) {
-        draggedItem.classList.remove('dragging');
-    }
+    if (draggedItem) draggedItem.classList.remove('dragging');
     document.querySelectorAll('.drag-over, .drag-over-end').forEach(el => el.classList.remove('drag-over', 'drag-over-end'));
     draggedItem = null;
 }
@@ -543,9 +348,7 @@ export function handleDragOver(e) {
         afterElement.classList.add('drag-over');
     } else {
         const lastDraggable = [...container.querySelectorAll('.draggable:not(.dragging)')].pop();
-        if (lastDraggable) {
-            lastDraggable.classList.add('drag-over-end');
-        }
+        if (lastDraggable) lastDraggable.classList.add('drag-over-end');
     }
 }
 
@@ -571,41 +374,34 @@ export function handleDrop(e) {
     const afterElement = getDragAfterElement(container, e.clientX, e.clientY);
     const draggedId = draggedItem.dataset.id || draggedItem.dataset.tabId;
     
+    // Abstract reordering logic to be cleaner
+    const findIndex = (arr, id) => arr.findIndex(item => item.id === (id || afterElement?.dataset.id || afterElement?.dataset.tabId));
+    
     if (draggedItem.matches('.task-tab')) {
-        const fromIndex = state.tabs.findIndex(t => t.id === draggedId);
-        const toIndex = afterElement ? state.tabs.findIndex(t => t.id === afterElement.dataset.tabId) : state.tabs.length;
-        const [item] = state.tabs.splice(fromIndex, 1);
-        state.tabs.splice(toIndex > fromIndex ? toIndex -1 : toIndex, 0, item);
-        saveState();
+        const fromIndex = findIndex(state.tabs, draggedId);
+        const toIndex = afterElement ? findIndex(state.tabs) : state.tabs.length;
+        actions.reorderTabs(fromIndex, toIndex > fromIndex ? toIndex - 1 : toIndex);
         renderTabs();
     } else if (draggedItem.matches('.section')) {
         const activeTab = getActiveTab();
         if (!activeTab) return;
-        const fromIndex = activeTab.sections.findIndex(s => s.id === draggedId);
-        const toIndex = afterElement ? activeTab.sections.findIndex(s => s.id === afterElement.dataset.id) : activeTab.sections.length;
-        const [item] = activeTab.sections.splice(fromIndex, 1);
-        activeTab.sections.splice(toIndex > fromIndex ? toIndex -1 : toIndex, 0, item);
-        saveState();
+        const fromIndex = findIndex(activeTab.sections, draggedId);
+        const toIndex = afterElement ? findIndex(activeTab.sections) : activeTab.sections.length;
+        actions.reorderSections(activeTab.id, fromIndex, toIndex > fromIndex ? toIndex -1 : toIndex);
         renderActiveTabContent();
     } else if (draggedItem.matches('li.draggable')) {
-        const activeTab = getActiveTab();
-        if (!activeTab) return;
-        const startSectionEl = draggedItem.closest('.section');
-        const endSectionEl = e.target.closest('.section');
-        if (!startSectionEl || !endSectionEl) return;
-        const startSection = activeTab.sections.find(s => s.id === startSectionEl.dataset.id);
-        const endSection = activeTab.sections.find(s => s.id === endSectionEl.dataset.id);
+        const startSectionId = draggedItem.closest('.section').dataset.id;
+        const endSectionId = e.target.closest('.section').dataset.id;
+        const { parentSection: startSection } = findTaskInfoById(draggedId) || {};
+        const { section: endSection } = findSectionInfoById(endSectionId) || {};
         if (!startSection || !endSection) return;
-        const fromIndex = startSection.tasks.findIndex(t => t.id === draggedId);
-        const [item] = startSection.tasks.splice(fromIndex, 1);
-        const toIndex = afterElement ? endSection.tasks.findIndex(t => t.id === afterElement.dataset.id) : endSection.tasks.length;
+
+        const fromIndex = findIndex(startSection.tasks, draggedId);
+        const toIndex = afterElement ? findIndex(endSection.tasks, afterElement.dataset.id) : endSection.tasks.length;
         
-        if (startSection === endSection) {
-             endSection.tasks.splice(toIndex > fromIndex ? toIndex -1 : toIndex, 0, item);
-        } else {
-             endSection.tasks.splice(toIndex, 0, item);
-        }
-        saveState();
+        const adjustedToIndex = (startSectionId === endSectionId && toIndex > fromIndex) ? toIndex - 1 : toIndex;
+
+        actions.reorderTask(startSectionId, endSectionId, fromIndex, adjustedToIndex, draggedId);
         renderActiveTabContent();
     }
 }
