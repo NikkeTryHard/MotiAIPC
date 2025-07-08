@@ -1,6 +1,6 @@
 import { dom, icons } from './config.js';
 import { state, calendarState, actions, getActiveTab, findTaskInfoById, findTabById } from './state.js';
-import { renderAll, renderTabs, renderActiveTabContent, renderCalendar, renderTimelineAndSummary, highlightTask, showToast, startInlineEdit, removeElementWithAnimation, addElement, updateTaskEl } from './ui.js';
+import { renderAll, renderTabs, renderActiveTabContent, renderCalendar, renderTimelineAndSummary, highlightTask, showToast, startInlineEdit, removeElementWithAnimation, addElement, updateTaskEl, updateIcons } from './ui.js';
 import { openPromptModal, openConfirmModal, openEventModal } from './modals.js';
 
 const COLOR_THEMES = ['default', 'velvet'];
@@ -17,7 +17,8 @@ export const formatDateKey = (date) => {
 export function handleThemeToggle() {
     const newTheme = dom.themeToggle.checked ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('motiOSTheme', newTheme);
+    localStorage.setItem('motiAITheme', newTheme);
+    updateIcons(newTheme);
 }
 
 export function handleThemeColorChange() {
@@ -27,7 +28,7 @@ export function handleThemeColorChange() {
     const newTheme = COLOR_THEMES[nextIndex];
     
     document.documentElement.setAttribute('data-color-theme', newTheme);
-    localStorage.setItem('motiOSColorTheme', newTheme);
+    localStorage.setItem('motiAIColorTheme', newTheme);
 }
 
 // --- TABS, SECTIONS, & TASKS HANDLERS ---
@@ -217,13 +218,13 @@ export function handleImportTab() {
             try {
                 const data = JSON.parse(readerEvent.target.result);
                 if (!data.title || !Array.isArray(data.sections)) {
-                    throw new Error("Invalid MotiOS list format.");
+                    throw new Error("Invalid MotiAI list format.");
                 }
                 const newTab = actions.importTab(data);
                 renderAll();
                 showToast(`Successfully imported "${newTab.title}".`, 'success');
             } catch (error) {
-                console.error("MotiOS_IMPORT: Failed to import file.", error);
+                console.error("MotiAI_IMPORT: Failed to import file.", error);
                 showToast(`Error importing: ${error.message}`, "error");
             }
         };

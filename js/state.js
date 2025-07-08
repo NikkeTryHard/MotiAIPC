@@ -41,13 +41,13 @@ const buildLookups = () => {
 
 // --- STATE PERSISTENCE ---
 const _saveState = () => {
-    console.log("MotiOS_STATE: Saving state to localStorage...");
+    console.log("MotiAI_STATE: Saving state to localStorage...");
     try {
         const stateToSave = { ...state };
         delete stateToSave.timeIndicatorInterval; // Don't save interval ID
-        localStorage.setItem('motiOSState', JSON.stringify(stateToSave));
+        localStorage.setItem('motiAIState', JSON.stringify(stateToSave));
     } catch (error) {
-        console.error("MotiOS_STATE: CRITICAL - Failed to save state.", error);
+        console.error("MotiAI_STATE: CRITICAL - Failed to save state.", error);
         showToast("Error saving data. Changes may be lost.", "error");
     }
 };
@@ -56,14 +56,21 @@ const _saveState = () => {
 export const saveState = debounce(_saveState, 500);
 
 export const loadState = async () => {
-    console.log("MotiOS_STATE: Loading state...");
-    const savedState = localStorage.getItem('motiOSState');
+    console.log("MotiAI_STATE: Loading state...");
+    let savedState = localStorage.getItem('motiAIState');
+    if (!savedState) {
+        savedState = localStorage.getItem('motiOSState');
+        if (savedState) {
+            localStorage.removeItem('motiOSState'); // remove old key
+        }
+    }
+
     if (savedState) {
         try {
             state = JSON.parse(savedState);
             // Migration for old data structures
             if (state.sections && !state.tabs) {
-                console.log("MotiOS_STATE: Old state format detected. Migrating to new tabbed structure.");
+                console.log("MotiAI_STATE: Old state format detected. Migrating to new tabbed structure.");
                 state = {
                     activeTabId: 'tab-migrated-1',
                     tabs: [{ id: 'tab-migrated-1', title: 'Main', mainTitle: "Today's Momentum", sections: state.sections }],
@@ -73,9 +80,9 @@ export const loadState = async () => {
             if (!state.events) state.events = {};
             if (!state.tabs || state.tabs.length === 0) throw new Error("No tabs found, forcing reload from file.");
             state.tabs.forEach(tab => { if (!tab.mainTitle) tab.mainTitle = "Today's Momentum"; });
-            console.log("MotiOS_STATE: SUCCESS - Loaded state from localStorage.");
+            console.log("MotiAI_STATE: SUCCESS - Loaded state from localStorage.");
         } catch (error) {
-            console.error("MotiOS_STATE: CRITICAL - Failed to parse state. Will attempt to load from file.", error);
+            console.error("MotiAI_STATE: CRITICAL - Failed to parse state. Will attempt to load from file.", error);
             showToast("Could not load saved data. Loading defaults.", "error");
             state = {}; // Reset state before loading from file
         }
@@ -91,9 +98,9 @@ export const loadState = async () => {
                 tabs: [{ id: "tab-initial-1", title: "Work", mainTitle: "Today's Momentum", sections: loadedData.sections || [] }],
                 events: loadedData.events || {}
             };
-            console.log("MotiOS_STATE: SUCCESS - Loaded state from 'tasks.json'.");
+            console.log("MotiAI_STATE: SUCCESS - Loaded state from 'tasks.json'.");
         } catch (error) {
-            console.warn(`MotiOS_STATE: INFO - Could not fetch 'tasks.json'. Using fallback.`, error);
+            console.warn(`MotiAI_STATE: INFO - Could not fetch 'tasks.json'. Using fallback.`, error);
             showToast("Welcome! Creating a new workspace for you.", "info");
             state = {
                 activeTabId: "tab-fb-1",

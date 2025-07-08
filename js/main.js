@@ -1,6 +1,6 @@
 import { dom, icons } from './config.js';
 import { state, calendarState, loadState, getActiveTab, findTaskInfoById, findSectionInfoById, actions, activeInlineEdit } from './state.js';
-import { renderAll, updateTimeIndicator, scrollToCurrentTime, showContextMenu, hideContextMenu, initTimePicker, openTimePicker, startInlineEdit, renderActiveTabContent } from './ui.js';
+import { renderAll, updateTimeIndicator, scrollToCurrentTime, showContextMenu, hideContextMenu, initTimePicker, openTimePicker, startInlineEdit, renderActiveTabContent, updateIcons } from './ui.js';
 import * as handlers from './handlers.js';
 
 // =================================================================================
@@ -8,7 +8,7 @@ import * as handlers from './handlers.js';
 // =================================================================================
 
 function setupEventListeners() {
-    console.log("MotiOS_EVENTS: Setting up all event listeners.");
+    console.log("MotiAI_EVENTS: Setting up all event listeners.");
     
     // --- Global & App Listeners ---
     dom.themeToggle.addEventListener('change', handlers.handleThemeToggle);
@@ -166,16 +166,26 @@ function setupEventListeners() {
 
 async function init() {
     console.log("========================================");
-    console.log(" MotiOS System Initialization Sequence ");
+    console.log(" MotiAI System Initialization Sequence ");
     console.log("========================================");
     
-    const savedTheme = localStorage.getItem('motiOSTheme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    const savedColorTheme = localStorage.getItem('motiOSColorTheme') || 'default';
+    let savedTheme = localStorage.getItem('motiAITheme');
+    if (!savedTheme) {
+        savedTheme = localStorage.getItem('motiOSTheme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        if (localStorage.getItem('motiOSTheme')) localStorage.removeItem('motiOSTheme');
+    }
+
+    let savedColorTheme = localStorage.getItem('motiAIColorTheme');
+    if (!savedColorTheme) {
+        savedColorTheme = localStorage.getItem('motiOSColorTheme') || 'default';
+        if (localStorage.getItem('motiOSColorTheme')) localStorage.removeItem('motiOSColorTheme');
+    }
     
     document.documentElement.setAttribute('data-theme', savedTheme);
     document.documentElement.setAttribute('data-color-theme', savedColorTheme);
     dom.themeToggle.checked = savedTheme === 'dark';
     dom.themeColorBtn.innerHTML = icons.palette;
+    updateIcons(savedTheme);
 
     await loadState();
     initTimePicker();
@@ -187,7 +197,7 @@ async function init() {
     setTimeout(scrollToCurrentTime, 500);
 
     console.log("========================================");
-    console.log(" MotiOS System Initialized. Welcome. ");
+    console.log(" MotiAI System Initialized. Welcome. ");
     console.log("========================================");
 }
 

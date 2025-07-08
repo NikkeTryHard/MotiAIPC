@@ -119,7 +119,7 @@ export function openEventModal(config) {
 }
 
 export function closeEventModal() {
-    console.log("MotiOS_MODAL: Closing event modal.");
+    console.log("MotiAI_MODAL: Closing event modal.");
     dom.eventModal.backdrop.classList.add('hidden');
 }
 

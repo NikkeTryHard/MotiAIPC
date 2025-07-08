@@ -59,6 +59,13 @@ export const dom = {
         period: document.getElementById('time-picker-period'),
     },
     toastContainer: document.getElementById('toast-container'),
+    favicons: {
+        appleTouchIcon: document.getElementById('apple-touch-icon'),
+        favicon192: document.getElementById('favicon-192'),
+        favicon32: document.getElementById('favicon-32'),
+        favicon16: document.getElementById('favicon-16'),
+        shortcutIcon: document.getElementById('shortcut-icon'),
+    },
 };
 
 export const icons = {

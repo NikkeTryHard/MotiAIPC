@@ -12,7 +12,7 @@ export function renderAll() {
 
 // --- TASK LIST UI (Initial & Full Renders) ---
 export function renderTabs() {
-    console.log("MotiOS_TABS: Rendering all tabs.");
+    console.log("MotiAI_TABS: Rendering all tabs.");
     const tabs = dom.taskTabsNav.querySelectorAll('.task-tab');
     tabs.forEach(tab => tab.remove());
     
@@ -34,11 +34,11 @@ export function renderActiveTabContent(isPartialUpdate = false) {
     if (!isPartialUpdate) {
         dom.sectionsContainer.innerHTML = '';
         if (!activeTab) {
-            dom.mainTitleText.textContent = "MotiOS";
+            dom.mainTitleText.textContent = "MotiAI";
             updateProgress();
             return;
         }
-        console.log(`MotiOS_TASKS: Rendering content for tab "${activeTab.title}"`);
+        console.log(`MotiAI_TASKS: Rendering content for tab "${activeTab.title}"`);
         dom.mainTitleText.textContent = activeTab.mainTitle || "Today's Momentum";
         
         if (activeTab.sections.length > 0) {
@@ -152,7 +152,7 @@ export function updateProgress() {
     if (!activeTab || !activeTab.sections) {
         if (dom.progressBar) dom.progressBar.style.width = `0%`;
         if (dom.progressText) dom.progressText.textContent = `No tasks in this tab`;
-        document.title = "MotiOS";
+        document.title = "MotiAI";
         return;
     }
     const allTasks = activeTab.sections.flatMap(s => s.tasks || []);
@@ -161,7 +161,7 @@ export function updateProgress() {
     const percentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
     if (dom.progressBar) dom.progressBar.style.width = `${percentage}%`;
     if (dom.progressText) dom.progressText.textContent = `${completedTasks} of ${totalTasks} tasks completed`;
-    document.title = `(${(percentage || 0).toFixed(0)}%) MotiOS`;
+    document.title = "MotiAI";
 }
 
 // --- CALENDAR, TIMELINE, & SUMMARY UI ---
@@ -320,7 +320,16 @@ export function highlightTask(taskId) {
     }
 }
 
-// --- CONTEXT MENU, TIME PICKER, TOAST, INLINE EDIT ---
+// --- ICONS, CONTEXT MENU, TIME PICKER, TOAST, INLINE EDIT ---
+export function updateIcons(theme) {
+    const iconPath = theme === 'dark' ? 'white_icons' : 'icons';
+    if (dom.favicons.appleTouchIcon) dom.favicons.appleTouchIcon.href = `${iconPath}/apple-touch-icon.png`;
+    if (dom.favicons.favicon192) dom.favicons.favicon192.href = `${iconPath}/favicon-192x192.png`;
+    if (dom.favicons.favicon32) dom.favicons.favicon32.href = `${iconPath}/favicon-32x32.png`;
+    if (dom.favicons.favicon16) dom.favicons.favicon16.href = `${iconPath}/favicon-16x16.png`;
+    if (dom.favicons.shortcutIcon) dom.favicons.shortcutIcon.href = theme === 'dark' ? 'white_icons/icon.ico' : 'icons/icon.ico';
+}
+
 export function showContextMenu(event, menuItems) {
     dom.contextMenu.innerHTML = '';
     menuItems.forEach(item => {
