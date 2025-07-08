@@ -1,225 +1,353 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MotiAI</title>
-    
+
     <!-- Favicons -->
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="icons/favicon-192x192.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
-    <link rel="shortcut icon" href="icons/icon.ico">
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="icons/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="icons/favicon-192x192.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="icons/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="icons/favicon-16x16.png"
+    />
+    <link rel="shortcut icon" href="white_icons/icon.ico" />
 
     <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- External Stylesheets -->
-    <link rel="stylesheet" href="css/base.css">
-    <link rel="stylesheet" href="css/layout.css">
-    <link rel="stylesheet" href="css/components.css">
-    <link rel="stylesheet" href="css/tasks.css">
-    <link rel="stylesheet" href="css/schedule.css">
-</head>
-<body>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
 
+    <!-- External Stylesheets -->
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/tasks.css" />
+    <link rel="stylesheet" href="css/schedule.css" />
+  </head>
+  <body>
     <div class="background">
-        <div class="aurora-3-container"></div>
+      <div class="aurora-3-container"></div>
     </div>
 
     <div class="app-container">
-        <header class="app-header">
-            <div class="logo-container">
-                <img id="logo-icon" src="icons/logo.png" alt="MotiAI Logo" class="logo-icon">
-                <h1 class="logo-title">MotiAI</h1>
-            </div>
-            <div class="theme-switcher">
-                <span class="theme-icon">☀️</span>
-                <label class="switch">
-                    <input type="checkbox" id="theme-toggle-checkbox">
-                    <span class="slider"></span>
-                </label>
-                <span class="theme-icon">🌙</span>
-                <button id="theme-color-btn" class="theme-color-btn" title="Change Accent Color" aria-label="Change Accent Color">
-                    <!-- SVG icon will be inserted by JS -->
-                </button>
-            </div>
-        </header>
-
-        <div class="content-wrapper">
-            <main class="task-list-container card">
-                <div class="task-list-header">
-                    <div id="task-tabs-nav" class="task-tabs-nav">
-                        <!-- Tabs will be dynamically inserted here -->
-                        <button id="add-tab-btn" class="add-tab-btn" title="Add New Tab" aria-label="Add New List">+</button>
-                    </div>
-
-                    <div class="progress-text">0/0 Tasks Completed</div>
-                    <div class="progress-container">
-                        <div class="progress-bar"></div>
-                    </div>
-
-                    <div class="main-header-content">
-                        <h2 class="main-title">
-                            <span id="main-title-text" class="editable-text" title="Right-click to rename">Today's Momentum</span>
-                        </h2>
-                    </div>
-                </div>
-
-                <div id="sections-container">
-                    <!-- Sections and tasks for the active tab will be inserted here -->
-                </div>
-
-            </main>
-
-            <aside class="schedule-container card">
-                <div class="schedule-top-section">
-                    <div class="calendar-container">
-                        <div class="calendar-header">
-                            <button id="prev-month-btn" class="calendar-nav-btn" aria-label="Previous Month"><</button>
-                            <h2 id="month-year-header" class="calendar-title">July 2024</h2>
-                            <button id="next-month-btn" class="calendar-nav-btn" aria-label="Next Month">></button>
-                        </div>
-                        <div class="calendar-grid-container">
-                            <div class="calendar-weekdays">
-                                <div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div>
-                            </div>
-                            <div id="calendar-grid" class="calendar-days">
-                                <!-- Calendar days will be dynamically inserted here -->
-                            </div>
-                        </div>
-                    </div>
-                    <div id="daily-summary-container" class="daily-summary-container">
-                        <h3 class="daily-summary-title">Summary for <span id="summary-date"></span></h3>
-                        <div id="daily-summary-content" class="daily-summary-content">
-                            <!-- Daily summary will be dynamically inserted here -->
-                        </div>
-                    </div>
-                </div>
-
-                <div id="timeline-view" class="timeline-view">
-                    <div class="timeline-header">
-                        <h3 id="timeline-date-header">Schedule for July 10</h3>
-                        <button id="add-event-button" class="add-event-btn" title="Add New Event" aria-label="Add New Event">+</button>
-                    </div>
-                    <div id="all-day-events-container" class="all-day-events-container">
-                        <!-- All-day events will be inserted here -->
-                    </div>
-                    <div class="timeline-body">
-                        <div id="time-labels" class="time-labels">
-                            <!-- Time labels (e.g., 9 AM) will be inserted here -->
-                        </div>
-                        <div id="timeline-grid" class="timeline-grid">
-                            <div id="current-time-line">
-                                <span id="current-time-label"></span>
-                            </div>
-                            <!-- Event blocks will be inserted here -->
-                        </div>
-                    </div>
-                </div>
-            </aside>
+      <header class="app-header">
+        <div class="logo-container">
+          <div id="logo-icon" class="logo-icon" aria-label="MotiAI Logo"></div>
+          <h1 class="logo-title">MotiAI</h1>
         </div>
+        <div class="theme-switcher">
+          <span class="theme-icon">☀️</span>
+          <label class="switch">
+            <input type="checkbox" id="theme-toggle-checkbox" />
+            <span class="slider"></span>
+          </label>
+          <span class="theme-icon">🌙</span>
+          <button
+            id="theme-color-btn"
+            class="theme-color-btn"
+            title="Change Accent Color"
+            aria-label="Change Accent Color"
+          >
+            <!-- SVG icon will be inserted by JS -->
+          </button>
+        </div>
+      </header>
+
+      <div class="content-wrapper">
+        <main class="task-list-container card">
+          <div class="task-list-header">
+            <div id="task-tabs-nav" class="task-tabs-nav">
+              <!-- Tabs will be dynamically inserted here -->
+              <button
+                id="add-tab-btn"
+                class="add-tab-btn"
+                title="Add New Tab"
+                aria-label="Add New List"
+              >
+                +
+              </button>
+            </div>
+
+            <div class="progress-text">0/0 Tasks Completed</div>
+            <div class="progress-container">
+              <div class="progress-bar"></div>
+            </div>
+
+            <div class="main-header-content">
+              <h2 class="main-title">
+                <span
+                  id="main-title-text"
+                  class="editable-text"
+                  title="Right-click to rename"
+                  >Today's Momentum</span
+                >
+              </h2>
+            </div>
+          </div>
+
+          <div id="sections-container">
+            <!-- Sections and tasks for the active tab will be inserted here -->
+          </div>
+        </main>
+
+        <aside class="schedule-container card">
+          <div class="schedule-top-section">
+            <div class="calendar-container">
+              <div class="calendar-header">
+                <button
+                  id="prev-month-btn"
+                  class="calendar-nav-btn"
+                  aria-label="Previous Month"
+                >
+                  <
+                </button>
+                <h2 id="month-year-header" class="calendar-title">July 2024</h2>
+                <button
+                  id="next-month-btn"
+                  class="calendar-nav-btn"
+                  aria-label="Next Month"
+                >
+                  >
+                </button>
+              </div>
+              <div class="calendar-grid-container">
+                <div class="calendar-weekdays">
+                  <div>S</div>
+                  <div>M</div>
+                  <div>T</div>
+                  <div>W</div>
+                  <div>T</div>
+                  <div>F</div>
+                  <div>S</div>
+                </div>
+                <div id="calendar-grid" class="calendar-days">
+                  <!-- Calendar days will be dynamically inserted here -->
+                </div>
+              </div>
+            </div>
+            <div id="daily-summary-container" class="daily-summary-container">
+              <h3 class="daily-summary-title">
+                Summary for <span id="summary-date"></span>
+              </h3>
+              <div id="daily-summary-content" class="daily-summary-content">
+                <!-- Daily summary will be dynamically inserted here -->
+              </div>
+            </div>
+          </div>
+
+          <div id="timeline-view" class="timeline-view">
+            <div class="timeline-header">
+              <h3 id="timeline-date-header">Schedule for July 10</h3>
+              <button
+                id="add-event-button"
+                class="add-event-btn"
+                title="Add New Event"
+                aria-label="Add New Event"
+              >
+                +
+              </button>
+            </div>
+            <div id="all-day-events-container" class="all-day-events-container">
+              <!-- All-day events will be inserted here -->
+            </div>
+            <div class="timeline-body">
+              <div id="time-labels" class="time-labels">
+                <!-- Time labels (e.g., 9 AM) will be inserted here -->
+              </div>
+              <div id="timeline-grid" class="timeline-grid">
+                <div id="current-time-line">
+                  <span id="current-time-label"></span>
+                </div>
+                <!-- Event blocks will be inserted here -->
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
     </div>
 
     <!-- Modal for adding/editing events and deadlines -->
     <div id="modal-backdrop" class="modal-backdrop hidden">
-        <div id="event-modal" class="modal card">
-            <h3 id="modal-title">Create Event</h3>
-            <form id="event-form">
-                <input type="hidden" id="event-id">
-                <div class="form-group">
-                    <label for="event-title">Title</label>
-                    <input type="text" id="event-title" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="event-date">Date</label>
-                    <input type="date" id="event-date" class="form-control" required>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="start-time-display">Start Time</label>
-                        <button type="button" id="start-time-display" class="time-picker-input"></button>
-                        <input type="hidden" id="start-time" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="end-time-display">End Time</label>
-                        <button type="button" id="end-time-display" class="time-picker-input"></button>
-                        <input type="hidden" id="end-time" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="all-day-label">
-                        <input type="checkbox" id="all-day-checkbox">
-                        <span>All-day</span>
-                    </label>
-                </div>
-                <div class="form-group">
-                    <label>Color</label>
-                    <div id="color-picker" class="color-picker">
-                        <div class="color-option" data-color="blue" style="background-color: var(--event-color-blue);"></div>
-                        <div class="color-option" data-color="green" style="background-color: var(--event-color-green);"></div>
-                        <div class="color-option" data-color="red" style="background-color: var(--event-color-red);"></div>
-                        <div class="color-option" data-color="purple" style="background-color: var(--event-color-purple);"></div>
-                        <div class="color-option" data-color="orange" style="background-color: var(--event-color-orange);"></div>
-                        <div class="color-option" data-color="teal" style="background-color: var(--event-color-teal);"></div>
-                    </div>
-                    <input type="hidden" id="event-color" value="blue">
-                </div>
-                <div class="modal-actions">
-                    <button type="button" id="delete-event-btn" class="btn btn-danger hidden">Delete</button>
-                    <button type="button" id="cancel-event-btn" class="btn btn-secondary">Cancel</button>
-                    <button type="submit" id="save-event-btn" class="btn btn-primary">Save</button>
-                </div>
-            </form>
-        </div>
+      <div id="event-modal" class="modal card">
+        <h3 id="modal-title">Create Event</h3>
+        <form id="event-form">
+          <input type="hidden" id="event-id" />
+          <div class="form-group">
+            <label for="event-title">Title</label>
+            <input type="text" id="event-title" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label for="event-date">Date</label>
+            <input type="date" id="event-date" class="form-control" required />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="start-time-display">Start Time</label>
+              <button
+                type="button"
+                id="start-time-display"
+                class="time-picker-input"
+              ></button>
+              <input type="hidden" id="start-time" required />
+            </div>
+            <div class="form-group">
+              <label for="end-time-display">End Time</label>
+              <button
+                type="button"
+                id="end-time-display"
+                class="time-picker-input"
+              ></button>
+              <input type="hidden" id="end-time" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="all-day-label">
+              <input type="checkbox" id="all-day-checkbox" />
+              <span>All-day</span>
+            </label>
+          </div>
+          <div class="form-group">
+            <label>Color</label>
+            <div id="color-picker" class="color-picker">
+              <div
+                class="color-option"
+                data-color="blue"
+                style="background-color: var(--event-color-blue)"
+              ></div>
+              <div
+                class="color-option"
+                data-color="green"
+                style="background-color: var(--event-color-green)"
+              ></div>
+              <div
+                class="color-option"
+                data-color="red"
+                style="background-color: var(--event-color-red)"
+              ></div>
+              <div
+                class="color-option"
+                data-color="purple"
+                style="background-color: var(--event-color-purple)"
+              ></div>
+              <div
+                class="color-option"
+                data-color="orange"
+                style="background-color: var(--event-color-orange)"
+              ></div>
+              <div
+                class="color-option"
+                data-color="teal"
+                style="background-color: var(--event-color-teal)"
+              ></div>
+            </div>
+            <input type="hidden" id="event-color" value="blue" />
+          </div>
+          <div class="modal-actions">
+            <button
+              type="button"
+              id="delete-event-btn"
+              class="btn btn-danger hidden"
+            >
+              Delete
+            </button>
+            <button
+              type="button"
+              id="cancel-event-btn"
+              class="btn btn-secondary"
+            >
+              Cancel
+            </button>
+            <button type="submit" id="save-event-btn" class="btn btn-primary">
+              Save
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
 
     <!-- Custom Prompt Modal -->
     <div id="prompt-modal-backdrop" class="modal-backdrop hidden">
-        <div id="prompt-modal" class="modal card">
-            <h3 id="prompt-modal-title">Enter Name</h3>
-            <form id="prompt-form">
-                <div id="prompt-modal-fields">
-                    <!-- Dynamic fields will be inserted here -->
-                </div>
-                <div class="modal-actions">
-                    <button type="button" id="prompt-cancel-btn" class="btn btn-secondary">Cancel</button>
-                    <button type="submit" id="prompt-save-btn" class="btn btn-primary">Save</button>
-                </div>
-            </form>
-        </div>
+      <div id="prompt-modal" class="modal card">
+        <h3 id="prompt-modal-title">Enter Name</h3>
+        <form id="prompt-form">
+          <div id="prompt-modal-fields">
+            <!-- Dynamic fields will be inserted here -->
+          </div>
+          <div class="modal-actions">
+            <button
+              type="button"
+              id="prompt-cancel-btn"
+              class="btn btn-secondary"
+            >
+              Cancel
+            </button>
+            <button type="submit" id="prompt-save-btn" class="btn btn-primary">
+              Save
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
 
     <!-- Custom Confirmation Modal -->
     <div id="confirm-modal-backdrop" class="modal-backdrop hidden">
-        <div id="confirm-modal" class="modal card">
-            <h3 id="confirm-modal-title">Confirm Action</h3>
-            <p id="confirm-modal-message">Are you sure? This action cannot be undone.</p>
-            <div class="modal-actions">
-                <button type="button" id="confirm-cancel-btn" class="btn btn-secondary">Cancel</button>
-                <button type="button" id="confirm-ok-btn" class="btn btn-danger">Confirm</button>
-            </div>
+      <div id="confirm-modal" class="modal card">
+        <h3 id="confirm-modal-title">Confirm Action</h3>
+        <p id="confirm-modal-message">
+          Are you sure? This action cannot be undone.
+        </p>
+        <div class="modal-actions">
+          <button
+            type="button"
+            id="confirm-cancel-btn"
+            class="btn btn-secondary"
+          >
+            Cancel
+          </button>
+          <button type="button" id="confirm-ok-btn" class="btn btn-danger">
+            Confirm
+          </button>
         </div>
+      </div>
     </div>
 
     <!-- Custom context menu -->
     <div id="custom-context-menu" class="custom-context-menu hidden">
-        <!-- Items are added dynamically by JS -->
+      <!-- Items are added dynamically by JS -->
     </div>
 
     <!-- Custom Time Picker -->
     <div id="custom-time-picker" class="custom-time-picker hidden">
-        <div class="time-picker-column" id="time-picker-hours"></div>
-        <div class="time-picker-column" id="time-picker-minutes"></div>
-        <div class="time-picker-column" id="time-picker-period"></div>
+      <div class="time-picker-column" id="time-picker-hours"></div>
+      <div class="time-picker-column" id="time-picker-minutes"></div>
+      <div class="time-picker-column" id="time-picker-period"></div>
     </div>
 
     <!-- Toast Notification Container -->
     <div id="toast-container" class="toast-container"></div>
 
-    <script type="module" src="js/main.js" defer></script>
-</body>
+    <script type="module" src="js/main.js"></script>
+  </body>
 </html>

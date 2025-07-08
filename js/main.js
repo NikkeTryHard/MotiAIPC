@@ -17,7 +17,6 @@ import {
   initTimePicker,
   openTimePicker,
   startInlineEdit,
-  updateLogoIcon,
 } from './ui/index.js';
 import * as handlers from './handlers/index.js';
 
@@ -316,7 +315,6 @@ async function init() {
   document.documentElement.setAttribute('data-color-theme', savedColorTheme);
   dom.themeToggle.checked = savedTheme === 'dark';
   dom.themeColorBtn.innerHTML = icons.palette;
-  updateLogoIcon(savedTheme);
 
   await loadState();
   initTimePicker();

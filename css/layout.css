@@ -39,7 +39,11 @@
 .logo-icon {
   width: 40px;
   height: 40px;
-  object-fit: contain;
+  background-image: var(--logo-icon-path);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  transition: background-image var(--transition-speed-med) ease;
 }
 
 .logo-title {

@@ -15,6 +15,8 @@ import {
   updateTaskEl,
   addTabEl,
   removeTabEl,
+  renderCalendar,
+  renderTimelineAndSummary,
 } from '../ui/index.js';
 import { openPromptModal, openConfirmModal } from '../modals.js';
 import { formatDateKey } from './scheduleHandlers.js';
@@ -74,16 +76,43 @@ export async function handleDeleteTab(tabId) {
 }
 
 export function handleSwitchTab(tabId, callback) {
-  dom.sectionsContainer.classList.add('fade-out');
-  setTimeout(() => {
+  const container = dom.sectionsContainer;
+  container.classList.add('fade-out');
+
+  const switchContent = () => {
     actions.setActiveTab(tabId);
     renderTabs();
     renderActiveTabContent();
-    dom.sectionsContainer.classList.remove('fade-out');
+    // Force a reflow before removing the class to ensure the transition plays
+    void container.offsetWidth;
+    container.classList.remove('fade-out');
     if (callback) {
+      // A small delay allows the element to be painted before we scroll to it
       setTimeout(callback, 50);
     }
-  }, 250);
+  };
+
+  // Use transitionend for a smooth experience, with a timeout fallback
+  // in case the event doesn't fire (e.g., element is hidden).
+  const transitionHandler = (e) => {
+    // Ensure we're listening to the right transition on the right element
+    if (e.target === container && e.propertyName === 'opacity') {
+      clearTimeout(fallbackTimeout);
+      container.removeEventListener('transitionend', transitionHandler);
+      switchContent();
+    }
+  };
+
+  container.addEventListener('transitionend', transitionHandler);
+
+  // The transition is 250ms, so the fallback is slightly longer.
+  const fallbackTimeout = setTimeout(() => {
+    console.warn(
+      "MotiAI_TRANSITION: 'transitionend' event did not fire, using fallback timeout."
+    );
+    container.removeEventListener('transitionend', transitionHandler);
+    switchContent();
+  }, 300);
 }
 
 export async function handleAddSection() {
@@ -180,7 +209,9 @@ export async function handleDeleteTask(taskId, taskEl) {
     if (task.deadlineEventId) {
       const dateKey = formatDateKey(new Date(task.deadline));
       actions.deleteEvent(task.deadlineEventId, dateKey);
-      // Re-rendering calendar/timeline is handled by processEventModal or needs to be called
+      // Re-render schedule UI to reflect the deleted event
+      renderCalendar();
+      renderTimelineAndSummary();
     }
     const deletedTask = actions.deleteTask(taskId);
     if (deletedTask) {

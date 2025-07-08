@@ -90,6 +90,7 @@ html[data-theme='light'] {
   --scrollbar-thumb-color: #ced4da;
   --scrollbar-track-color: #e9ecef;
   --timepicker-bg: #fff;
+  --logo-icon-path: url('../icons/logo.png');
 }
 
 html[data-theme='dark'] {
@@ -110,6 +111,7 @@ html[data-theme='dark'] {
   --scrollbar-thumb-color: #48484a;
   --scrollbar-track-color: #2c2c2e;
   --timepicker-bg: #1c1c1e;
+  --logo-icon-path: url('../white_icons/logo.png');
 }
 
 /* --- GENERAL SETUP & CUSTOM SCROLLBAR --- */

@@ -358,35 +358,24 @@
   cursor: grab;
   color: var(--text-muted);
   transition: opacity var(--transition-speed-fast);
+  opacity: 0.3; /* Subtly visible for touch devices */
 }
 
 .task-tab .drag-handle {
-  opacity: 0;
-  visibility: hidden;
   position: absolute;
   left: 12px;
-  transition: all var(--transition-speed-fast) ease;
 }
 
-.section-header .drag-handle {
-  opacity: 0;
+@media (hover: hover) {
+  .drag-handle {
+    opacity: 0; /* Hide on mouse devices until hover */
+  }
 }
 
-.checklist li .drag-handle {
-  opacity: 0;
-}
-
-.task-tab:hover .drag-handle {
-  opacity: 1;
-  visibility: visible;
-}
-
-.section-header:hover .drag-handle {
-  opacity: 1;
-}
-
+.task-tab:hover .drag-handle,
+.section-header:hover .drag-handle,
 .checklist li:hover .drag-handle {
-  opacity: 1;
+  opacity: 1; /* Full opacity on hover */
 }
 
 .draggable.dragging {
