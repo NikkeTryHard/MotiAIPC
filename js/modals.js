@@ -1,6 +1,6 @@
 import { dom } from './config.js';
-import { formatDateKey } from './handlers.js';
-import { formatTimeForDisplay } from './ui.js';
+import { formatDateKey } from './handlers/index.js';
+import { formatTimeForDisplay, showToast } from './ui/index.js';
 
 export function openEventModal(config) {
     return new Promise((resolve, reject) => {
@@ -48,7 +48,7 @@ export function openEventModal(config) {
             
             // Validation
             if (!form.elements['all-day-checkbox'].checked && startTimeInput.value >= endTimeInput.value) {
-                alert("End time must be after start time.");
+                showToast("End time must be after start time.", "error");
                 return;
             }
 

@@ -1,0 +1,414 @@
+/* --- TASK LIST & TABS --- */
+.task-list-container {
+  flex: 3 1 60%;
+  min-width: 450px;
+  padding-top: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.task-list-header {
+  padding-top: 20px;
+}
+
+.task-tabs-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--card-border-color);
+  margin: -32px -32px 24px;
+  padding: 24px 32px 16px;
+  overflow-x: auto;
+}
+
+.task-tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  padding: 10px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 99px;
+  transition: all var(--transition-speed-fast) ease;
+  white-space: nowrap;
+}
+
+.task-tab.active {
+  color: #fff;
+  background-color: var(--accent-color-primary);
+}
+
+.task-tab:not(.active):hover {
+  color: var(--text-color);
+  background-color: var(--hover-bg-color);
+}
+
+.add-tab-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  font-weight: 400;
+  cursor: pointer;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 5px;
+  flex-shrink: 0;
+}
+
+.add-tab-btn:hover {
+  background-color: var(--hover-bg-color);
+  color: var(--accent-color-primary);
+}
+
+.main-header-content {
+  margin-top: 20px;
+}
+
+.main-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.progress-text {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.progress-container {
+  width: 100%;
+  height: 8px;
+  background-color: var(--card-border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--accent-gradient);
+  border-radius: 4px;
+  transition: width 0.8s var(--transition-cubic);
+}
+
+#sections-container {
+  flex-grow: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 10px;
+  margin-right: -10px;
+  margin-top: 30px;
+  transition: opacity 0.25s ease-in-out;
+}
+
+#sections-container.fade-out {
+  opacity: 0;
+}
+
+.section {
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: var(--border-radius-md);
+  border: 1px solid transparent;
+  animation: fade-in 0.4s ease;
+}
+
+.section.removing {
+  animation: slide-fade-out 0.4s ease forwards;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+  gap: 8px;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  flex-grow: 1;
+}
+
+.section-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.section-control-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-speed-fast) ease;
+  border-radius: var(--border-radius-sm);
+  padding: 4px;
+}
+
+.section-control-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.section-control-btn:hover {
+  color: var(--danger-color);
+  background-color: var(--hover-bg-color);
+}
+
+.section-control-btn[title='Add Task']:hover {
+  color: var(--accent-color-secondary);
+}
+
+.toggle-section-btn {
+  transition: transform var(--transition-speed-med) var(--transition-cubic);
+}
+
+.section.collapsed .toggle-section-btn {
+  transform: rotate(-90deg);
+}
+
+.checklist-container {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.4s var(--transition-cubic);
+}
+
+.checklist-wrapper {
+  overflow: hidden;
+}
+
+.section.collapsed .checklist-container {
+  grid-template-rows: 0fr;
+}
+
+.checklist {
+  list-style: none;
+}
+
+.checklist li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 16px 8px;
+  position: relative;
+  transition: background-color var(--transition-speed-fast) ease;
+  border-radius: var(--border-radius-md);
+  border-bottom: 1px solid var(--card-border-color);
+  animation: fade-in 0.4s ease;
+}
+
+.checklist li.removing {
+  animation: slide-fade-out 0.4s ease forwards;
+  overflow: hidden;
+}
+
+.checklist li.highlighted {
+  animation: highlight-pulse 1.5s ease-in-out;
+}
+
+.checklist li:last-child {
+  border-bottom: none;
+}
+
+.checklist li:hover {
+  background-color: var(--hover-bg-color);
+}
+
+.task-main-content {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+}
+
+.checklist input[type='checkbox'] {
+  display: none;
+}
+
+.checklist label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  flex-grow: 1;
+  font-size: 1rem;
+  color: var(--text-color);
+  transition: color var(--transition-speed-med) ease;
+}
+
+.custom-checkbox {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--text-muted);
+  background-color: transparent;
+  border-radius: 50%;
+  margin-right: 15px;
+  flex-shrink: 0;
+  transition: all var(--transition-speed-fast) ease;
+  position: relative;
+}
+
+.checklist input[type='checkbox']:checked + label {
+  color: var(--text-completed);
+  text-decoration: line-through;
+}
+
+.checklist input[type='checkbox']:checked + label .custom-checkbox {
+  background: var(--accent-color-primary);
+  border-color: var(--accent-color-primary);
+  animation: check-pop 0.5s var(--transition-cubic);
+}
+
+.checkmark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 6px;
+  border-left: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: translate(-50%, -60%) rotate(-45deg) scale(0);
+  transition: transform 0.2s 0.1s ease-out;
+}
+
+.checklist input[type='checkbox']:checked + label .checkmark {
+  transform: translate(-50%, -60%) rotate(-45deg) scale(1);
+}
+
+.task-text-content {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.task-text {
+  flex-grow: 1;
+  line-height: 1.5;
+}
+
+.task-info {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+  padding-left: 37px;
+  line-height: 1.4;
+}
+
+.task-deadline {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  padding-left: 37px;
+}
+
+.empty-state-message {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 40px 20px;
+}
+
+/* --- INLINE EDITING --- */
+.editable-text {
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: border-color var(--transition-speed-fast);
+}
+
+.editable-text:hover {
+  border-color: var(--accent-color-primary);
+}
+
+.inline-edit-input {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  background-color: var(--hover-bg-color);
+  border: 1px solid var(--accent-color-primary);
+  border-radius: var(--border-radius-sm);
+  padding: 2px 6px;
+  margin: -3px -7px;
+  outline: none;
+}
+
+.section-title .inline-edit-input {
+  padding: 4px 8px;
+  margin: -5px -9px;
+}
+
+#main-title-text .inline-edit-input {
+  padding: 4px 8px;
+  margin: -5px -9px;
+}
+
+/* --- DRAG & DROP --- */
+.drag-handle {
+  cursor: grab;
+  color: var(--text-muted);
+  transition: opacity var(--transition-speed-fast);
+}
+
+.task-tab .drag-handle {
+  opacity: 0;
+  visibility: hidden;
+  position: absolute;
+  left: 12px;
+  transition: all var(--transition-speed-fast) ease;
+}
+
+.section-header .drag-handle {
+  opacity: 0;
+}
+
+.checklist li .drag-handle {
+  opacity: 0;
+}
+
+.task-tab:hover .drag-handle {
+  opacity: 1;
+  visibility: visible;
+}
+
+.section-header:hover .drag-handle {
+  opacity: 1;
+}
+
+.checklist li:hover .drag-handle {
+  opacity: 1;
+}
+
+.draggable.dragging {
+  opacity: 0.5;
+  background: var(--hover-bg-color);
+  border: 1px dashed var(--accent-color-primary);
+}
+
+.section.drag-over,
+.checklist li.drag-over {
+  border-top: 2px solid var(--accent-color-primary);
+}
+
+.section.drag-over-end,
+.checklist li.drag-over-end {
+  border-bottom: 2px solid var(--accent-color-primary);
+}
+
+.task-tabs-nav .task-tab.drag-over {
+  border-left: 2px solid var(--accent-color-primary);
+}
+
+.task-tabs-nav .task-tab.drag-over-end {
+  border-right: 2px solid var(--accent-color-primary);
+}
