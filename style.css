@@ -26,6 +26,7 @@ html[data-theme='light'] {
     --event-color-teal: rgba(49, 151, 149, 0.9);
     --scrollbar-thumb-color: #cbd5e0;
     --scrollbar-track-color: #e2e8f0;
+    --timepicker-bg: #ffffff;
 }
 
 html[data-theme='dark'] {
@@ -48,6 +49,7 @@ html[data-theme='dark'] {
     --event-color-teal: rgba(13, 189, 187, 0.8);
     --scrollbar-thumb-color: #414868;
     --scrollbar-track-color: #24283B;
+    --timepicker-bg: #2a2f44;
 }
 
 /* --- GENERAL SETUP & CUSTOM SCROLLBAR --- */
@@ -68,7 +70,7 @@ body {
 /* --- KEYFRAME ANIMATIONS --- */
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes check-pop { 0%{transform:scale(1)} 50%{transform:scale(1.2)} 100%{transform:scale(1)} }
-@keyframes slideFadeOut { to { opacity: 0; transform: translateX(30px); max-height: 0; padding: 0; margin: 0; border: 0; } }
+@keyframes slideFadeOut { to { opacity: 0; transform: translateX(30px); max-height: 0; padding-top: 0; padding-bottom: 0; margin-top: 0; margin-bottom: 0; border-width: 0; } }
 
 /* --- APP LAYOUT --- */
 .app-container { width: 100%; max-width: 1600px; height: 100vh; margin: 0 auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
@@ -101,15 +103,14 @@ input:checked + .slider:before { background-color: #fff; transform: translateX(2
 .add-tab-btn:hover { background-color: var(--hover-bg-color); color: var(--accent-color-primary); }
 .main-header-content { margin-bottom: 20px; }
 .main-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 8px; }
-#main-title-text { cursor: pointer; border-bottom: 2px solid transparent; transition: border-color var(--transition-speed-fast); }
-#main-title-text:hover { border-color: var(--accent-color-primary); }
 .progress-text { font-size: 0.9rem; color: var(--text-muted); }
 .progress-container { width: 100%; height: 6px; background-color: rgba(0,0,0,0.2); border-radius: 3px; overflow: hidden; margin-bottom: 30px; }
 .progress-bar { height: 100%; width: 0%; background: var(--accent-gradient); border-radius: 3px; transition: width 0.8s var(--transition-cubic); }
 #sections-container { flex-grow: 1; overflow-y: auto; min-height: 0; padding-right: 10px; margin-right: -10px; }
-.section { margin-bottom: 10px; padding: 10px; border-radius: 8px; border: 1px solid transparent; }
+.section { margin-bottom: 10px; padding: 10px; border-radius: 8px; border: 1px solid transparent; animation: fadeIn 0.4s ease; }
+.section.removing { animation: slideFadeOut 0.4s ease forwards; }
 .section-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; margin-bottom: 15px; }
-.section-title { font-size: 1.5rem; font-weight: 600; cursor: pointer; flex-grow: 1; }
+.section-title { font-size: 1.5rem; font-weight: 600; flex-grow: 1; }
 .section-controls { display: flex; align-items: center; gap: 4px; }
 .section-control-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; transition: all var(--transition-speed-fast) ease; border-radius: 8px; padding: 4px; }
 .section-control-btn svg { width: 20px; height: 20px; }
@@ -121,7 +122,8 @@ input:checked + .slider:before { background-color: #fff; transform: translateX(2
 .checklist-wrapper { overflow: hidden; }
 .section.collapsed .checklist-container { grid-template-rows: 0fr; }
 .checklist { list-style: none; }
-.checklist li { display: flex; flex-direction: column; align-items: flex-start; padding: 12px 0; position: relative; transition: background-color var(--transition-speed-fast) ease; border-radius: 10px; border-bottom: 1px solid var(--card-border-color); }
+.checklist li { display: flex; flex-direction: column; align-items: flex-start; padding: 12px 0; position: relative; transition: background-color var(--transition-speed-fast) ease; border-radius: 10px; border-bottom: 1px solid var(--card-border-color); animation: fadeIn 0.4s ease; }
+.checklist li.removing { animation: slideFadeOut 0.4s ease forwards; overflow: hidden; }
 .checklist li:last-child { border-bottom: none; }
 .checklist li:hover { background-color: var(--hover-bg-color); }
 .task-main-content { display: flex; align-items: center; width: 100%; }
@@ -132,22 +134,23 @@ input:checked + .slider:before { background-color: #fff; transform: translateX(2
 .checklist input[type="checkbox"]:checked + label .custom-checkbox { background: var(--accent-color-primary); border-color: var(--accent-color-primary); animation: check-pop 0.5s var(--transition-cubic); }
 .checkmark { position: absolute; top: 50%; left: 50%; width: 9px; height: 5px; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: translate(-50%, -60%) rotate(-45deg) scale(0); transition: transform 0.2s 0.1s ease-out; }
 .checklist input[type="checkbox"]:checked + label .checkmark { transform: translate(-50%, -60%) rotate(-45deg) scale(1); }
-.task-text-content { display: flex; flex-direction: column; }
+.task-text-content { display: flex; flex-direction: column; flex-grow: 1; }
 .task-text { flex-grow: 1; line-height: 1.5; }
 .task-deadline { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; padding-left: 37px; }
-.task-controls { display: flex; align-items: center; opacity: 0; transition: opacity var(--transition-speed-fast) ease; margin-left: auto; padding-left: 10px; }
-.checklist li:hover .task-controls { opacity: 1; }
-.task-control-btn { background:none; border:none; color:var(--text-muted); cursor:pointer; padding: 6px; transition:all var(--transition-speed-fast) ease; border-radius: 6px; }
-.task-control-btn svg { width: 18px; height: 18px; }
-.task-control-btn:hover { color: var(--accent-color-secondary); }
-.task-control-btn.delete-task-btn:hover { color: var(--danger-color); }
 .add-section-container { padding-top: 20px; margin-top: auto; border-top: 1px solid var(--card-border-color); }
 #add-section-btn { width: 100%; }
+.empty-state-message { text-align: center; color: var(--text-muted); padding: 40px 20px; }
+
+/* --- INLINE EDITING --- */
+.editable-text { cursor: pointer; border-bottom: 2px solid transparent; transition: border-color var(--transition-speed-fast); }
+.editable-text:hover { border-color: var(--accent-color-primary); }
+.inline-edit-input { width: 100%; font: inherit; color: inherit; background-color: var(--hover-bg-color); border: 1px solid var(--accent-color-primary); border-radius: 6px; padding: 2px 6px; margin: -3px -7px; outline: none; }
+.section-title .inline-edit-input { padding: 4px 8px; margin: -5px -9px; }
+#main-title-text .inline-edit-input { padding: 4px 8px; margin: -5px -9px; }
 
 /* --- DRAG & DROP --- */
-.drag-handle { cursor: grab; color: var(--text-muted); opacity: 0; transition: opacity var(--transition-speed-fast); margin-right: 8px; }
-.draggable:hover .drag-handle { opacity: 0.5; }
-.draggable:hover .drag-handle:hover { opacity: 1; }
+.drag-handle { cursor: grab; color: var(--text-muted); opacity: 0.3; transition: opacity var(--transition-speed-fast); margin-right: 8px; }
+.draggable:hover .drag-handle { opacity: 1; }
 .draggable.dragging { opacity: 0.5; background: var(--hover-bg-color); border: 1px dashed var(--accent-color-primary); }
 .drag-over { border-top: 2px solid var(--accent-color-primary) !important; }
 .drag-over-end { border-bottom: 2px solid var(--accent-color-primary) !important; }
@@ -216,6 +219,7 @@ input:checked + .slider:before { background-color: #fff; transform: translateX(2
 .form-group label { display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-muted); }
 .form-control { width: 100%; background: var(--bg-color); border: 1px solid var(--card-border-color); border-radius: 8px; padding: 12px; color: var(--text-color); font-size: 1rem; transition: all var(--transition-speed-fast) ease; }
 .form-control:focus { border-color: var(--accent-color-primary); outline: none; }
+.form-control[readonly] { background-color: var(--scrollbar-track-color); opacity: 0.7; cursor: not-allowed; }
 .form-row { display: flex; gap: 15px; transition: opacity 0.3s ease; }
 #event-form.all-day-active .form-row { opacity: 0.4; pointer-events: none; }
 .all-day-label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 1rem; color: var(--text-color); user-select: none; }
@@ -232,6 +236,17 @@ input:checked + .slider:before { background-color: #fff; transform: translateX(2
 .btn-danger { background-color: var(--danger-color); color: #fff; }
 .btn-danger:hover { opacity: 0.9; }
 .hidden { display: none !important; }
+
+/* --- CUSTOM TIME PICKER --- */
+.time-picker-input { width: 100%; background: var(--bg-color); border: 1px solid var(--card-border-color); border-radius: 8px; padding: 12px; color: var(--text-color); font-size: 1rem; transition: all var(--transition-speed-fast) ease; text-align: left; cursor: pointer; font-family: var(--font-body); }
+.time-picker-input:hover { border-color: var(--accent-color-primary); }
+.custom-time-picker { position: absolute; z-index: 1100; background-color: var(--timepicker-bg); border: 1px solid var(--card-border-color); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); display: flex; height: 180px; padding: 10px; gap: 5px; animation: fadeIn 0.2s ease; }
+.time-picker-column { width: 60px; height: 100%; overflow-y: auto; text-align: center; }
+.time-picker-column::-webkit-scrollbar { width: 4px; }
+.time-picker-column::-webkit-scrollbar-thumb { background-color: var(--scrollbar-thumb-color); }
+.time-picker-option { padding: 8px 0; cursor: pointer; border-radius: 6px; transition: background-color var(--transition-speed-fast); }
+.time-picker-option:hover { background-color: var(--hover-bg-color); }
+.time-picker-option.selected { background-color: var(--accent-color-primary); color: #fff; font-weight: 600; }
 
 /* --- CONTEXT MENU --- */
 .custom-context-menu { position: absolute; z-index: 2000; background-color: var(--card-bg-color); border: 1px solid var(--card-border-color); border-radius: 8px; padding: 5px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }

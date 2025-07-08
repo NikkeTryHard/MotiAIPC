@@ -1,33 +1,51 @@
 import { dom } from './config.js';
 import { formatDateKey } from './handlers.js';
+import { formatTimeForDisplay } from './ui.js';
 
 export function openEventModal(config) {
-    const { form, title, deleteBtn, backdrop, allDayCheckbox } = dom.eventModal;
+    const { form, title, deleteBtn, backdrop, allDayCheckbox, eventTitleInput, startTimeDisplay, endTimeDisplay, startTimeInput, endTimeInput } = dom.eventModal;
     form.reset();
     title.textContent = config.title;
+    
+    // Handle event title and readonly state
+    eventTitleInput.value = config.eventTitle || '';
+    if (config.taskId) {
+        eventTitleInput.readOnly = true;
+        eventTitleInput.classList.add('readonly');
+    } else {
+        eventTitleInput.readOnly = false;
+        eventTitleInput.classList.remove('readonly');
+    }
+
     form.elements['event-id'].value = config.id || '';
     form.elements['task-id'].value = config.taskId || '';
-    form.elements['event-title'].value = config.eventTitle || '';
     form.elements['event-date'].value = config.date ? formatDateKey(config.date) : '';
-    form.elements['start-time'].value = config.startTime || '09:00';
-    form.elements['end-time'].value = config.endTime || '10:00';
+    
+    const startTime = config.startTime || '09:00';
+    const endTime = config.endTime || '10:00';
+    startTimeInput.value = startTime;
+    endTimeInput.value = endTime;
+    startTimeDisplay.textContent = formatTimeForDisplay(startTime);
+    endTimeDisplay.textContent = formatTimeForDisplay(endTime);
     
     const isAllDay = config.allDay || false;
     allDayCheckbox.checked = isAllDay;
     form.classList.toggle('all-day-active', isAllDay);
-    form.elements['start-time'].required = !isAllDay;
-    form.elements['end-time'].required = !isAllDay;
+    startTimeInput.required = !isAllDay;
+    endTimeInput.required = !isAllDay;
 
     document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
     const color = config.color || 'blue';
     const colorEl = document.querySelector(`.color-option[data-color="${color}"]`);
     if (colorEl) colorEl.classList.add('selected');
     form.elements['event-color'].value = color;
+    
     deleteBtn.classList.toggle('hidden', !config.id);
     backdrop.classList.remove('hidden');
 }
 
 export function closeEventModal() {
+    console.log("MotiOS_MODAL: Closing event modal.");
     dom.eventModal.backdrop.classList.add('hidden');
 }
 

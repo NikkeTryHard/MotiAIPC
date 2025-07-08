@@ -42,8 +42,8 @@
                     </div>
 
                     <div class="main-header-content">
-                        <h2 class="main-title" title="Click to rename this list">
-                            <span id="main-title-text">Today's Momentum</span>
+                        <h2 class="main-title">
+                            <span id="main-title-text" class="editable-text" title="Click to rename this list">Today's Momentum</span>
                         </h2>
                         <div class="progress-text">0/0 Tasks Completed</div>
                     </div>
@@ -129,12 +129,14 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="start-time">Start Time</label>
-                        <input type="time" id="start-time" class="form-control" step="900" required>
+                        <label for="start-time-display">Start Time</label>
+                        <button type="button" id="start-time-display" class="time-picker-input"></button>
+                        <input type="hidden" id="start-time" required>
                     </div>
                     <div class="form-group">
-                        <label for="end-time">End Time</label>
-                        <input type="time" id="end-time" class="form-control" step="900" required>
+                        <label for="end-time-display">End Time</label>
+                        <button type="button" id="end-time-display" class="time-picker-input"></button>
+                        <input type="hidden" id="end-time" required>
                     </div>
                 </div>
                 <div class="form-group">
@@ -196,6 +198,13 @@
     <!-- Custom context menu -->
     <div id="custom-context-menu" class="custom-context-menu hidden">
         <!-- Items are added dynamically by JS -->
+    </div>
+
+    <!-- Custom Time Picker -->
+    <div id="custom-time-picker" class="custom-time-picker hidden">
+        <div class="time-picker-column" id="time-picker-hours"></div>
+        <div class="time-picker-column" id="time-picker-minutes"></div>
+        <div class="time-picker-column" id="time-picker-period"></div>
     </div>
 
     <script type="module" src="js/main.js" defer></script>

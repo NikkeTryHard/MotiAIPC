@@ -24,12 +24,18 @@ export const dom = {
     addEventButton: document.getElementById('add-event-button'),
     eventModal: {
         backdrop: document.getElementById('modal-backdrop'),
+        modal: document.getElementById('event-modal'),
         form: document.getElementById('event-form'),
         title: document.getElementById('modal-title'),
+        eventTitleInput: document.getElementById('event-title'),
         deleteBtn: document.getElementById('delete-event-btn'),
         cancelBtn: document.getElementById('cancel-event-btn'),
         colorPicker: document.getElementById('color-picker'),
         allDayCheckbox: document.getElementById('all-day-checkbox'),
+        startTimeDisplay: document.getElementById('start-time-display'),
+        endTimeDisplay: document.getElementById('end-time-display'),
+        startTimeInput: document.getElementById('start-time'),
+        endTimeInput: document.getElementById('end-time'),
     },
     promptModal: {
         backdrop: document.getElementById('prompt-modal-backdrop'),
@@ -47,6 +53,12 @@ export const dom = {
         cancelBtn: document.getElementById('confirm-cancel-btn'),
     },
     contextMenu: document.getElementById('custom-context-menu'),
+    timePicker: {
+        container: document.getElementById('custom-time-picker'),
+        hours: document.getElementById('time-picker-hours'),
+        minutes: document.getElementById('time-picker-minutes'),
+        period: document.getElementById('time-picker-period'),
+    }
 };
 
 export const icons = {

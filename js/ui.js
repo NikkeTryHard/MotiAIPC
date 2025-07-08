@@ -21,7 +21,7 @@ export function renderTabs() {
         tabEl.className = 'task-tab draggable';
         tabEl.dataset.tabId = tab.id;
         tabEl.draggable = true;
-        tabEl.innerHTML = `${icons.grip} <span class="tab-title">${tab.title}</span>`;
+        tabEl.innerHTML = `${icons.grip} <span class="tab-title editable-text">${tab.title}</span>`;
         if (tab.id === state.activeTabId) tabEl.classList.add('active');
         dom.taskTabsNav.insertBefore(tabEl, dom.addTabBtn);
     });
@@ -39,11 +39,26 @@ export function renderActiveTabContent() {
     }
     console.log(`MotiOS_TASKS: Rendering content for tab "${activeTab.title}" (ID: ${activeTab.id})`);
     dom.mainTitleText.textContent = activeTab.mainTitle || "Today's Momentum";
-    activeTab.sections.forEach(sectionData => dom.sectionsContainer.appendChild(createSectionEl(sectionData)));
+    
+    if (activeTab.sections.length > 0) {
+        activeTab.sections.forEach(sectionData => dom.sectionsContainer.appendChild(createSectionEl(sectionData)));
+    } else {
+        renderEmptyState();
+    }
+    
     updateProgress();
 }
 
-function createSectionEl(sectionData) {
+export function renderEmptyState() {
+    const activeTab = getActiveTab();
+    if (activeTab && activeTab.sections.length === 0) {
+        dom.sectionsContainer.innerHTML = `<div class="empty-state-message"><h3>This list is empty.</h3><p>Add a new section to get started.</p></div>`;
+    } else if (dom.sectionsContainer.querySelector('.empty-state-message')) {
+        dom.sectionsContainer.innerHTML = '';
+    }
+}
+
+export function createSectionEl(sectionData) {
     const sectionEl = document.createElement('section');
     sectionEl.className = `section draggable ${sectionData.collapsed ? 'collapsed' : ''}`;
     sectionEl.dataset.id = sectionData.id;
@@ -56,11 +71,11 @@ function createSectionEl(sectionData) {
     sectionEl.innerHTML = `
         <div class="section-header">
             ${icons.grip}
-            <h3 class="section-title" title="Click to toggle collapse">${sectionData.title}</h3>
+            <h3 class="section-title">
+                <span class="editable-text">${sectionData.title}</span>
+            </h3>
             <div class="section-controls">
                 <button class="section-control-btn add-task-btn" title="Add Task">${icons.add}</button>
-                <button class="section-control-btn rename-section-btn" title="Rename Section">${icons.rename}</button>
-                <button class="section-control-btn delete-section-btn" title="Delete Section">${icons.delete}</button>
                 <button class="section-control-btn toggle-section-btn" title="Toggle Collapse">${icons.toggle}</button>
             </div>
         </div>
@@ -69,7 +84,7 @@ function createSectionEl(sectionData) {
     return sectionEl;
 }
 
-function createTaskEl(taskData) {
+export function createTaskEl(taskData) {
     const li = document.createElement('li');
     li.dataset.id = taskData.id;
     li.className = `draggable ${taskData.completed ? 'completed' : ''}`;
@@ -84,7 +99,7 @@ function createTaskEl(taskData) {
             <label for="${uniqueId}">
                 <span class="custom-checkbox"><span class="checkmark"></span></span>
                 <div class="task-text-content">
-                    <span class="task-text">${taskData.text}</span>
+                    <span class="task-text editable-text">${taskData.text}</span>
                 </div>
             </label>
         </div>
@@ -290,4 +305,111 @@ export function showContextMenu(event, menuItems) {
 
 export function hideContextMenu() {
     dom.contextMenu.classList.add('hidden');
+}
+
+// --- CUSTOM TIME PICKER UI ---
+let activeTimePickerTarget = null;
+
+export function initTimePicker() {
+    console.log("MotiOS_TIMEPICKER: Initializing custom time picker.");
+    const { container, hours, minutes, period } = dom.timePicker;
+
+    // Populate columns
+    for (let i = 1; i <= 12; i++) hours.innerHTML += `<div class="time-picker-option" data-value="${String(i).padStart(2, '0')}">${String(i).padStart(2, '0')}</div>`;
+    for (let i = 0; i < 60; i += 5) minutes.innerHTML += `<div class="time-picker-option" data-value="${String(i).padStart(2, '0')}">${String(i).padStart(2, '0')}</div>`;
+    period.innerHTML += `<div class="time-picker-option" data-value="AM">AM</div>`;
+    period.innerHTML += `<div class="time-picker-option" data-value="PM">PM</div>`;
+
+    container.addEventListener('click', e => {
+        e.stopPropagation();
+        const option = e.target.closest('.time-picker-option');
+        if (option && activeTimePickerTarget) {
+            updateTimeFromPicker();
+        }
+    });
+}
+
+export function openTimePicker(targetButton) {
+    console.log(`MotiOS_TIMEPICKER: Opening for target ${targetButton.id}`);
+    const { container, hours, minutes, period } = dom.timePicker;
+    activeTimePickerTarget = targetButton;
+
+    const hiddenInput = targetButton.id === 'start-time-display' ? dom.eventModal.startTimeInput : dom.eventModal.endTimeInput;
+    const currentTime = hiddenInput.value; // "HH:mm"
+    const [currentHour24, currentMinute] = currentTime.split(':').map(Number);
+
+    let currentHour12 = currentHour24 % 12;
+    if (currentHour12 === 0) currentHour12 = 12;
+    const currentPeriod = currentHour24 >= 12 ? 'PM' : 'AM';
+
+    // Set selected states
+    [hours, minutes, period].forEach(col => col.querySelectorAll('.selected').forEach(el => el.classList.remove('selected')));
+    
+    const hourEl = hours.querySelector(`[data-value="${String(currentHour12).padStart(2, '0')}"]`);
+    const minuteEl = minutes.querySelector(`[data-value="${String(Math.round(currentMinute / 5) * 5).padStart(2, '0')}"]`);
+    const periodEl = period.querySelector(`[data-value="${currentPeriod}"]`);
+
+    if(hourEl) hourEl.classList.add('selected');
+    if(minuteEl) minuteEl.classList.add('selected');
+    if(periodEl) periodEl.classList.add('selected');
+
+    // Scroll into view
+    if(hourEl) hourEl.scrollIntoView({ block: 'center' });
+    if(minuteEl) minuteEl.scrollIntoView({ block: 'center' });
+
+    // Position and show
+    const rect = targetButton.getBoundingClientRect();
+    container.style.top = `${rect.bottom + 5}px`;
+    container.style.left = `${rect.left}px`;
+    container.classList.remove('hidden');
+
+    document.addEventListener('click', closeTimePickerOnClickOutside, { once: true });
+}
+
+function closeTimePickerOnClickOutside(e) {
+    if (!dom.timePicker.container.contains(e.target)) {
+        closeTimePicker();
+    } else {
+        // Re-add listener if click was inside picker
+        document.addEventListener('click', closeTimePickerOnClickOutside, { once: true });
+    }
+}
+
+export function closeTimePicker() {
+    console.log("MotiOS_TIMEPICKER: Closing time picker.");
+    dom.timePicker.container.classList.add('hidden');
+    activeTimePickerTarget = null;
+}
+
+function updateTimeFromPicker() {
+    if (!activeTimePickerTarget) return;
+
+    const { hours, minutes, period } = dom.timePicker;
+    const hour12 = hours.querySelector('.selected')?.dataset.value || '12';
+    const minute = minutes.querySelector('.selected')?.dataset.value || '00';
+    const periodVal = period.querySelector('.selected')?.dataset.value || 'AM';
+
+    // Convert to 24h format
+    let hour24 = parseInt(hour12, 10);
+    if (periodVal === 'PM' && hour24 < 12) {
+        hour24 += 12;
+    } else if (periodVal === 'AM' && hour24 === 12) {
+        hour24 = 0;
+    }
+    const time24h = `${String(hour24).padStart(2, '0')}:${minute}`;
+
+    // Update DOM
+    const hiddenInput = activeTimePickerTarget.id === 'start-time-display' ? dom.eventModal.startTimeInput : dom.eventModal.endTimeInput;
+    hiddenInput.value = time24h;
+    activeTimePickerTarget.textContent = formatTimeForDisplay(time24h);
+}
+
+export function formatTimeForDisplay(time24h) {
+    if (!time24h) return '00:00 AM';
+    const [h, m] = time24h.split(':');
+    const hour = parseInt(h, 10);
+    const period = hour >= 12 ? 'PM' : 'AM';
+    let hour12 = hour % 12;
+    if (hour12 === 0) hour12 = 12;
+    return `${String(hour12).padStart(2, '0')}:${m} ${period}`;
 }
