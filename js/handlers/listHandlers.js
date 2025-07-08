@@ -107,6 +107,7 @@ export function handleSwitchTab(tabId, callback) {
 
   // The transition is 250ms, so the fallback is slightly longer.
   const fallbackTimeout = setTimeout(() => {
+    // eslint-disable-next-line no-console
     console.warn(
       "MotiAI_TRANSITION: 'transitionend' event did not fire, using fallback timeout."
     );
@@ -279,6 +280,7 @@ export function handleImportTab() {
         handleSwitchTab(newTab.id);
         showToast(`Successfully imported "${newTab.title}".`, 'success');
       } catch (error) {
+        // eslint-disable-next-line no-console
         console.error('MotiAI_IMPORT: Failed to import file.', error);
         showToast(`Error importing: ${error.message}`, 'error');
       }

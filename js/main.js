@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { dom, icons } from './config.js';
 import {
   state,
@@ -154,8 +155,9 @@ function setupEventListeners() {
             icon: icons.deadline,
             action: () =>
               handlers.processEventModal({
-                title: 'Edit Task Deadline',
                 ...eventData,
+                title: 'Edit Task Deadline',
+                eventTitle: eventData.title,
                 date: new Date(task.deadline),
                 taskId,
               }),
@@ -251,8 +253,9 @@ function setupEventListeners() {
     const eventData = state.events[dateKey]?.find((evt) => evt.id === eventId);
     if (eventData)
       handlers.processEventModal({
-        title: 'Edit Event',
         ...eventData,
+        title: 'Edit Event',
+        eventTitle: eventData.title,
         date: calendarState.selectedDate,
       });
   };
