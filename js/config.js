@@ -1,10 +1,10 @@
 export const dom = {
     themeToggle: document.getElementById('theme-toggle-checkbox'),
+    themeColorBtn: document.getElementById('theme-color-btn'),
     mainTitleText: document.getElementById('main-title-text'),
     taskTabsNav: document.getElementById('task-tabs-nav'),
     addTabBtn: document.getElementById('add-tab-btn'),
     sectionsContainer: document.getElementById('sections-container'),
-    addSectionBtn: document.getElementById('add-section-btn'),
     progressBar: document.querySelector('.progress-bar'),
     progressText: document.querySelector('.progress-text'),
     monthYearHeader: document.getElementById('month-year-header'),
@@ -41,8 +41,7 @@ export const dom = {
         backdrop: document.getElementById('prompt-modal-backdrop'),
         form: document.getElementById('prompt-form'),
         title: document.getElementById('prompt-modal-title'),
-        label: document.getElementById('prompt-modal-label'),
-        input: document.getElementById('prompt-modal-input'),
+        fieldsContainer: document.getElementById('prompt-modal-fields'),
         cancelBtn: document.getElementById('prompt-cancel-btn'),
     },
     confirmModal: {
@@ -72,4 +71,5 @@ export const icons = {
     import: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>`,
     event: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`,
     task: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
+    palette: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a7 7 0 0 0-7 7c0 2.35 1.12 4.42 2.83 5.73"></path><path d="M12 22a7 7 0 0 0 7-7c0-2.35-1.12-4.42-2.83-5.73"></path></svg>`
 };

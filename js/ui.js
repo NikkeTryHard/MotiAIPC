@@ -1,6 +1,6 @@
 import { dom, icons } from './config.js';
 import { state, calendarState, getActiveTab } from './state.js';
-import { formatDateKey } from './handlers.js';
+import { formatDateKey, navigateToTask } from './handlers.js';
 
 // --- MAIN RENDER FUNCTION ---
 export function renderAll() {
@@ -52,7 +52,7 @@ export function renderActiveTabContent() {
 export function renderEmptyState() {
     const activeTab = getActiveTab();
     if (activeTab && activeTab.sections.length === 0) {
-        dom.sectionsContainer.innerHTML = `<div class="empty-state-message"><h3>This list is empty.</h3><p>Add a new section to get started.</p></div>`;
+        dom.sectionsContainer.innerHTML = `<div class="empty-state-message"><h3>This list is empty.</h3><p>Right-click to add a new section.</p></div>`;
     } else if (dom.sectionsContainer.querySelector('.empty-state-message')) {
         dom.sectionsContainer.innerHTML = '';
     }
@@ -90,8 +90,11 @@ export function createTaskEl(taskData) {
     li.className = `draggable ${taskData.completed ? 'completed' : ''}`;
     li.draggable = true;
     const uniqueId = `checkbox-${taskData.id}`;
+    
     const deadlineDate = taskData.deadline ? new Date(taskData.deadline) : null;
     const deadlineHTML = deadlineDate ? `<div class="task-deadline">Due: ${deadlineDate.toLocaleDateString()} ${deadlineDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>` : '';
+    const infoHTML = taskData.info ? `<div class="task-info">${taskData.info}</div>` : '';
+
     li.innerHTML = `
         <div class="task-main-content">
             ${icons.grip}
@@ -103,6 +106,7 @@ export function createTaskEl(taskData) {
                 </div>
             </label>
         </div>
+        ${infoHTML}
         ${deadlineHTML}`;
     return li;
 }
@@ -191,6 +195,9 @@ function renderTimeline() {
         eventEl.className = `all-day-event event-color-${event.color}`;
         eventEl.textContent = event.title;
         eventEl.dataset.eventId = event.id;
+        if (event.taskId) {
+            eventEl.dataset.taskId = event.taskId;
+        }
         dom.allDayEventsContainer.appendChild(eventEl);
     });
 
@@ -199,6 +206,9 @@ function renderTimeline() {
         eventEl.className = `timeline-event event-color-${event.color}`;
         eventEl.textContent = event.title;
         eventEl.dataset.eventId = event.id;
+        if (event.taskId) {
+            eventEl.dataset.taskId = event.taskId;
+        }
         const [startHour, startMinute] = event.startTime.split(':').map(Number);
         const [endHour, endMinute] = event.endTime.split(':').map(Number);
         const pixelsPerHour = 60;
@@ -218,21 +228,25 @@ function renderDailySummary() {
     const dateKey = formatDateKey(date);
     
     const dayEvents = state.events[dateKey] || [];
-    
     const tasksDue = state.tabs.flatMap(tab => 
         tab.sections.flatMap(section => 
             section.tasks.filter(task => task.deadline && formatDateKey(new Date(task.deadline)) === dateKey)
         )
     );
 
+    // Filter out events that are just deadlines for tasks, to avoid duplication
+    const taskEventIds = new Set(tasksDue.map(task => task.deadlineEventId));
+    const standaloneEvents = dayEvents.filter(event => !taskEventIds.has(event.id));
+
     dom.summaryContent.innerHTML = '';
 
-    if (dayEvents.length === 0 && tasksDue.length === 0) {
+    if (standaloneEvents.length === 0 && tasksDue.length === 0) {
         dom.summaryContent.innerHTML = '<p class="summary-no-items">No events or deadlines today.</p>';
         return;
     }
 
-    dayEvents.sort((a, b) => a.allDay ? -1 : b.allDay ? 1 : a.startTime.localeCompare(b.startTime)).forEach(event => {
+    // Render standalone events
+    standaloneEvents.sort((a, b) => a.allDay ? -1 : b.allDay ? 1 : a.startTime.localeCompare(b.startTime)).forEach(event => {
         const time = event.allDay ? 'All-day' : `${formatTimeForDisplay(event.startTime)} - ${formatTimeForDisplay(event.endTime)}`;
         const itemEl = document.createElement('div');
         itemEl.className = 'summary-item';
@@ -246,10 +260,12 @@ function renderDailySummary() {
         dom.summaryContent.appendChild(itemEl);
     });
 
+    // Render tasks with deadlines
     tasksDue.forEach(task => {
         const time = new Date(task.deadline).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         const itemEl = document.createElement('div');
         itemEl.className = 'summary-item';
+        itemEl.dataset.taskId = task.id; // For click-to-navigate
         itemEl.innerHTML = `
             <div class="summary-item-icon" style="color: var(--accent-color-secondary)">${icons.task}</div>
             <div class="summary-item-text">
@@ -277,6 +293,20 @@ export function scrollToCurrentTime() {
     if (formatDateKey(new Date()) === formatDateKey(calendarState.selectedDate) && dom.timelineBody) {
         const lineTop = parseFloat(dom.currentTimeLine.style.top || '0');
         dom.timelineBody.scrollTo({ top: lineTop - dom.timelineBody.clientHeight / 2, behavior: 'smooth' });
+    }
+}
+
+export function highlightTask(taskId) {
+    const taskEl = document.querySelector(`li[data-id="${taskId}"]`);
+    if (taskEl) {
+        console.log(`MotiOS_UI: Highlighting task ${taskId}`);
+        taskEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        taskEl.classList.add('highlighted');
+        setTimeout(() => {
+            taskEl.classList.remove('highlighted');
+        }, 1500);
+    } else {
+        console.warn(`MotiOS_UI: Could not find task element ${taskId} to highlight.`);
     }
 }
 

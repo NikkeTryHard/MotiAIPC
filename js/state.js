@@ -2,6 +2,7 @@ import { formatDateKey } from './handlers.js';
 
 export let state = {};
 export let calendarState = { currentDate: new Date(), selectedDate: new Date() };
+export let activeInlineEdit = { cleanup: null };
 
 export const getActiveTab = () => (state.tabs && state.activeTabId) ? state.tabs.find(t => t.id === state.activeTabId) : null;
 
@@ -15,10 +16,24 @@ export const findTaskAndSectionById = (taskId) => {
     return { task: null, section: null };
 };
 
+export const findTaskAndSectionAndTabById = (taskId) => {
+    if (!state.tabs) return { task: null, section: null, tab: null };
+    for (const tab of state.tabs) {
+        for (const section of tab.sections) {
+            const task = section.tasks.find(t => t.id === taskId);
+            if (task) return { task, section, tab };
+        }
+    }
+    return { task: null, section: null, tab: null };
+};
+
 export const saveState = () => {
     console.log("MotiOS_STATE: Saving state to localStorage...");
     try {
-        localStorage.setItem('motiOSState', JSON.stringify(state));
+        // Clean up any potential circular references or non-serializable data before saving
+        const stateToSave = { ...state };
+        delete stateToSave.timeIndicatorInterval;
+        localStorage.setItem('motiOSState', JSON.stringify(stateToSave));
         console.log("MotiOS_STATE: SUCCESS - State saved.");
     } catch (error) {
         console.error("MotiOS_STATE: CRITICAL - Failed to save state.", error);

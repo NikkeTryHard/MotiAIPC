@@ -22,7 +22,9 @@
 </head>
 <body>
 
-    <div class="background"></div>
+    <div class="background">
+        <div class="aurora-3-container"></div>
+    </div>
 
     <div class="app-container">
         <header class="app-header">
@@ -37,6 +39,9 @@
                     <span class="slider"></span>
                 </label>
                 <span class="theme-icon">🌙</span>
+                <button id="theme-color-btn" class="theme-color-btn" title="Change Accent Color">
+                    <!-- SVG icon will be inserted by JS -->
+                </button>
             </div>
         </header>
 
@@ -48,24 +53,20 @@
                         <button id="add-tab-btn" class="add-tab-btn" title="Add New Tab">+</button>
                     </div>
 
+                    <div class="progress-text">0/0 Tasks Completed</div>
+                    <div class="progress-container">
+                        <div class="progress-bar"></div>
+                    </div>
+
                     <div class="main-header-content">
                         <h2 class="main-title">
                             <span id="main-title-text" class="editable-text" title="Right-click to rename">Today's Momentum</span>
                         </h2>
-                        <div class="progress-text">0/0 Tasks Completed</div>
-                    </div>
-                    
-                    <div class="progress-container">
-                        <div class="progress-bar"></div>
                     </div>
                 </div>
 
                 <div id="sections-container">
                     <!-- Sections and tasks for the active tab will be inserted here -->
-                </div>
-
-                <div class="add-section-container">
-                    <button id="add-section-btn" class="btn btn-secondary">Add New Section</button>
                 </div>
 
             </main>
@@ -178,9 +179,8 @@
         <div id="prompt-modal" class="modal card">
             <h3 id="prompt-modal-title">Enter Name</h3>
             <form id="prompt-form">
-                <div class="form-group">
-                    <label id="prompt-modal-label" for="prompt-modal-input">Name</label>
-                    <input type="text" id="prompt-modal-input" class="form-control" required>
+                <div id="prompt-modal-fields">
+                    <!-- Dynamic fields will be inserted here -->
                 </div>
                 <div class="modal-actions">
                     <button type="button" id="prompt-cancel-btn" class="btn btn-secondary">Cancel</button>

@@ -1,5 +1,5 @@
 import { dom, icons } from './config.js';
-import { state, calendarState, loadState, getActiveTab, findTaskAndSectionById } from './state.js';
+import { state, calendarState, loadState, getActiveTab, findTaskAndSectionById, saveState, activeInlineEdit } from './state.js';
 import { renderAll, updateTimeIndicator, scrollToCurrentTime, showContextMenu, hideContextMenu, initTimePicker, openTimePicker } from './ui.js';
 import * as handlers from './handlers.js';
 import { closeEventModal } from './modals.js';
@@ -13,30 +13,34 @@ function setupEventListeners() {
     
     // --- Global & App Listeners ---
     dom.themeToggle.addEventListener('change', handlers.handleThemeToggle);
+    dom.themeColorBtn.addEventListener('click', handlers.handleThemeColorChange);
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.custom-context-menu')) {
             hideContextMenu();
         }
-        // All inline editing is now handled via context menus for consistency.
+        if (activeInlineEdit.cleanup && !e.target.closest('.inline-edit-input')) {
+            activeInlineEdit.cleanup();
+        }
     });
 
     // --- Task List & Header Listeners ---
     dom.addTabBtn.addEventListener('click', handlers.handleAddTab);
-    dom.addSectionBtn.addEventListener('click', handlers.handleAddSection);
     
     // Context menu for the main title
-    document.querySelector('.main-header-content').addEventListener('contextmenu', e => {
+    dom.mainTitleText.addEventListener('contextmenu', e => {
         e.preventDefault();
-        const activeTab = getActiveTab();
-        if (!activeTab) return;
+        e.stopPropagation();
         showContextMenu(e, [
             {
                 label: 'Rename',
                 icon: icons.rename,
                 action: () => {
                     handlers.startInlineEdit(dom.mainTitleText, (newTitle) => {
-                        activeTab.mainTitle = newTitle;
-                        handlers.saveState();
+                        const tab = getActiveTab();
+                        if (tab) {
+                            tab.mainTitle = newTitle;
+                            saveState();
+                        }
                     });
                 }
             }
@@ -87,11 +91,12 @@ function setupEventListeners() {
     dom.sectionsContainer.addEventListener('click', e => {
         const target = e.target;
         const sectionEl = target.closest('.section');
-        if (!sectionEl) return;
-        const sectionId = sectionEl.dataset.id;
-
-        if (target.closest('.add-task-btn')) handlers.handleAddTask(sectionId);
-        else if (target.closest('.toggle-section-btn')) handlers.handleToggleSection(sectionEl);
+        
+        if (target.closest('.add-task-btn')) {
+            if (sectionEl) handlers.handleAddTask(sectionEl.dataset.id);
+        } else if (target.closest('.toggle-section-btn')) {
+            if (sectionEl) handlers.handleToggleSection(sectionEl);
+        }
     });
 
     dom.sectionsContainer.addEventListener('contextmenu', e => {
@@ -108,12 +113,7 @@ function setupEventListeners() {
                 { 
                     label: 'Edit Task', 
                     icon: icons.rename, 
-                    action: () => {
-                        const textEl = taskEl.querySelector('.task-text');
-                        if (textEl) {
-                            handlers.startInlineEdit(textEl, (newText) => handlers.handleEditTask(taskId, newText));
-                        }
-                    }
+                    action: () => handlers.handleEditTask(taskId)
                 }
             ];
 
@@ -149,6 +149,11 @@ function setupEventListeners() {
                 { type: 'divider' },
                 { label: 'Delete Section', class: 'danger', icon: icons.delete, action: () => handlers.handleDeleteSection(sectionId, sectionEl) }
             ]);
+        } else {
+            // Right-clicked on empty space
+            showContextMenu(e, [
+                { label: 'Add New Section', icon: icons.add, action: handlers.handleAddSection }
+            ]);
         }
     });
 
@@ -157,8 +162,12 @@ function setupEventListeners() {
     dom.nextMonthBtn.addEventListener('click', () => handlers.handleMonthChange(1));
     dom.calendarGrid.addEventListener('click', handlers.handleDateSelect);
     dom.addEventButton.addEventListener('click', () => handlers.processEventModal({ title: 'Create Event', date: calendarState.selectedDate }));
+    
     dom.timelineGrid.addEventListener('click', e => {
-        if (!e.target.closest('.timeline-event')) {
+        const eventEl = e.target.closest('.timeline-event');
+        if (eventEl && eventEl.dataset.taskId) {
+            handlers.navigateToTask(eventEl.dataset.taskId);
+        } else if (!eventEl) {
             handlers.handleTimelineClick(e);
         }
     });
@@ -169,6 +178,7 @@ function setupEventListeners() {
         const eventData = state.events[dateKey]?.find(evt => evt.id === eventId);
         if (eventData) handlers.processEventModal({ title: 'Edit Event', ...eventData, date: calendarState.selectedDate });
     };
+
     dom.timelineGrid.addEventListener('dblclick', e => {
         const eventEl = e.target.closest('.timeline-event');
         if (eventEl) openTimelineEventModal(eventEl);
@@ -178,8 +188,12 @@ function setupEventListeners() {
         if (eventEl) openTimelineEventModal(eventEl);
     });
 
-    // --- Modal Listeners (Now handled within the promise-based modal functions) ---
-    // Note: The direct listeners for the event modal are removed as they are now encapsulated.
+    dom.summaryContent.addEventListener('click', e => {
+        const summaryItem = e.target.closest('.summary-item[data-task-id]');
+        if (summaryItem) {
+            handlers.navigateToTask(summaryItem.dataset.taskId);
+        }
+    });
 
     // --- Custom Time Picker Listeners ---
     dom.eventModal.startTimeDisplay.addEventListener('click', (e) => {
@@ -205,8 +219,12 @@ async function init() {
     console.log("========================================");
     
     const savedTheme = localStorage.getItem('motiOSTheme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const savedColorTheme = localStorage.getItem('motiOSColorTheme') || 'default';
+    
     document.documentElement.setAttribute('data-theme', savedTheme);
+    document.documentElement.setAttribute('data-color-theme', savedColorTheme);
     dom.themeToggle.checked = savedTheme === 'dark';
+    dom.themeColorBtn.innerHTML = icons.palette;
 
     await loadState();
     initTimePicker();

@@ -1,7 +1,9 @@
 import { dom, icons } from './config.js';
-import { state, calendarState, saveState, getActiveTab, findTaskAndSectionById } from './state.js';
-import { renderAll, renderTabs, renderActiveTabContent, renderCalendar, renderTimelineAndSummary, createSectionEl, createTaskEl, updateProgress, renderEmptyState } from './ui.js';
+import { state, calendarState, saveState, getActiveTab, findTaskAndSectionById, findTaskAndSectionAndTabById, activeInlineEdit } from './state.js';
+import { renderAll, renderTabs, renderActiveTabContent, renderCalendar, renderTimelineAndSummary, createSectionEl, createTaskEl, updateProgress, renderEmptyState, highlightTask } from './ui.js';
 import { openPromptModal, openConfirmModal, openEventModal } from './modals.js';
+
+const COLOR_THEMES = ['default', 'velvet'];
 
 // --- UTILITY ---
 export const formatDateKey = (date) => {
@@ -19,8 +21,23 @@ export function handleThemeToggle() {
     localStorage.setItem('motiOSTheme', newTheme);
 }
 
+export function handleThemeColorChange() {
+    const currentTheme = document.documentElement.getAttribute('data-color-theme') || 'default';
+    const currentIndex = COLOR_THEMES.indexOf(currentTheme);
+    const nextIndex = (currentIndex + 1) % COLOR_THEMES.length;
+    const newTheme = COLOR_THEMES[nextIndex];
+    
+    document.documentElement.setAttribute('data-color-theme', newTheme);
+    localStorage.setItem('motiOSColorTheme', newTheme);
+    console.log(`MotiOS_THEME: Color theme changed to ${newTheme}`);
+}
+
 // --- INLINE EDITING HANDLER ---
 export function startInlineEdit(element, onSave) {
+    if (activeInlineEdit.cleanup) {
+        activeInlineEdit.cleanup();
+    }
+
     element.style.display = 'none';
     const input = document.createElement('input');
     input.type = 'text';
@@ -37,7 +54,10 @@ export function startInlineEdit(element, onSave) {
             input.remove();
         }
         element.style.display = '';
+        activeInlineEdit.cleanup = null;
     };
+
+    activeInlineEdit.cleanup = cleanup;
 
     const saveChanges = () => {
         const newValue = input.value.trim();
@@ -63,8 +83,11 @@ export function startInlineEdit(element, onSave) {
 // --- TABS, SECTIONS, & TASKS HANDLERS ---
 export async function handleAddTab() {
     try {
-        const title = await openPromptModal({ title: "New List", label: "Enter list name:", value: "New List" });
-        const newTab = { id: generateId('tab'), title, mainTitle: "Today's Momentum", sections: [] };
+        const result = await openPromptModal({
+            title: "New List",
+            fields: [{ name: 'title', label: "Enter list name:", value: "New List", required: true }]
+        });
+        const newTab = { id: generateId('tab'), title: result.title, mainTitle: "Today's Momentum", sections: [] };
         state.tabs.push(newTab);
         state.activeTabId = newTab.id;
         saveState();
@@ -105,19 +128,33 @@ export async function handleDeleteTab(tabId) {
     }
 }
 
-export function handleSwitchTab(tabId) {
-    state.activeTabId = tabId;
-    saveState();
-    renderTabs();
-    renderActiveTabContent();
+export function handleSwitchTab(tabId, callback) {
+    if (activeInlineEdit.cleanup) {
+        activeInlineEdit.cleanup();
+    }
+    dom.sectionsContainer.classList.add('fade-out');
+    setTimeout(() => {
+        state.activeTabId = tabId;
+        saveState();
+        renderTabs();
+        renderActiveTabContent();
+        dom.sectionsContainer.classList.remove('fade-out');
+        if (callback) {
+            // Use another timeout to ensure DOM is ready after render
+            setTimeout(callback, 50);
+        }
+    }, 250); // Match CSS transition duration
 }
 
 export async function handleAddSection() {
     const activeTab = getActiveTab();
     if (!activeTab) return;
     try {
-        const title = await openPromptModal({ title: "New Section", label: "Enter section name:", value: "New Section" });
-        const newSection = { id: generateId('sec'), title, collapsed: false, tasks: [] };
+        const result = await openPromptModal({
+            title: "New Section",
+            fields: [{ name: 'title', label: "Enter section name:", value: "New Section", required: true }]
+        });
+        const newSection = { id: generateId('sec'), title: result.title, collapsed: false, tasks: [] };
         activeTab.sections.push(newSection);
         saveState();
 
@@ -162,8 +199,14 @@ export async function handleAddTask(sectionId) {
     const section = getActiveTab()?.sections.find(s => s.id === sectionId);
     if (!section) return;
     try {
-        const text = await openPromptModal({ title: "New Task", label: "Enter task description:", value: "" });
-        const newTask = { id: generateId('task'), text, completed: false };
+        const result = await openPromptModal({
+            title: "New Task",
+            fields: [
+                { name: 'text', label: "Task:", value: "", required: true },
+                { name: 'info', label: "Info (Optional):", value: "" }
+            ]
+        });
+        const newTask = { id: generateId('task'), text: result.text, info: result.info, completed: false };
         section.tasks.push(newTask);
         saveState();
 
@@ -178,11 +221,24 @@ export async function handleAddTask(sectionId) {
     }
 }
 
-export function handleEditTask(taskId, newText) {
+export async function handleEditTask(taskId) {
     const { task } = findTaskAndSectionById(taskId);
     if (!task) return;
-    task.text = newText;
-    saveState();
+    try {
+        const result = await openPromptModal({
+            title: "Edit Task",
+            fields: [
+                { name: 'text', label: "Task:", value: task.text, required: true },
+                { name: 'info', label: "Info (Optional):", value: task.info || "" }
+            ]
+        });
+        task.text = result.text;
+        task.info = result.info;
+        saveState();
+        renderActiveTabContent(); // Re-render to show changes
+    } catch (error) {
+        console.log("MotiOS_TASKS: Edit task action cancelled.");
+    }
 }
 
 export async function handleDeleteTask(taskId, taskEl) {
@@ -384,7 +440,7 @@ export async function processEventModal(config) {
             }
 
             if (taskId) {
-                const { task } = findTaskAndSectionById(taskId);
+                const { task } = findTaskAndSectionAndTabById(taskId);
                 if (task) {
                     task.deadline = isAllDay ? `${dateKey}T00:00` : `${dateKey}T${eventToSave.startTime}`;
                     task.deadlineEventId = id;
@@ -412,7 +468,7 @@ export async function processEventModal(config) {
                     
                     let taskWasAffected = false;
                     if (deletedEvent.taskId) {
-                        const { task } = findTaskAndSectionById(deletedEvent.taskId);
+                        const { task } = findTaskAndSectionAndTabById(deletedEvent.taskId);
                         if (task) {
                             delete task.deadline;
                             delete task.deadlineEventId;
@@ -429,6 +485,23 @@ export async function processEventModal(config) {
         }
     } catch (error) {
         console.log(`MotiOS_MODAL: ${error.message}`);
+    }
+}
+
+export function navigateToTask(taskId) {
+    console.log(`MotiOS_NAV: Navigating to task ${taskId}`);
+    const { tab } = findTaskAndSectionAndTabById(taskId);
+    if (!tab) {
+        console.error(`MotiOS_NAV: Task ${taskId} not found in any tab.`);
+        return;
+    }
+
+    if (tab.id !== state.activeTabId) {
+        handleSwitchTab(tab.id, () => {
+            highlightTask(taskId);
+        });
+    } else {
+        highlightTask(taskId);
     }
 }
 

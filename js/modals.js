@@ -125,22 +125,63 @@ export function closeEventModal() {
 
 export function openPromptModal(config) {
     return new Promise((resolve, reject) => {
-        const { backdrop, form, title, label, input, cancelBtn } = dom.promptModal;
+        const { backdrop, form, title, fieldsContainer, cancelBtn } = dom.promptModal;
         
         title.textContent = config.title || "Input Required";
-        label.textContent = config.label || "Enter value:";
-        input.value = config.value || "";
+        fieldsContainer.innerHTML = ''; // Clear previous fields
+
+        // Create form fields dynamically
+        config.fields.forEach(field => {
+            const formGroup = document.createElement('div');
+            formGroup.className = 'form-group';
+
+            const label = document.createElement('label');
+            label.htmlFor = `prompt-field-${field.name}`;
+            label.textContent = field.label;
+            
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.id = `prompt-field-${field.name}`;
+            input.name = field.name;
+            input.value = field.value || '';
+            input.className = 'form-control';
+            if (field.required) {
+                input.required = true;
+            }
+
+            formGroup.appendChild(label);
+            formGroup.appendChild(input);
+            fieldsContainer.appendChild(formGroup);
+        });
         
         backdrop.classList.remove('hidden');
-        input.focus();
-        input.select();
+        const firstInput = fieldsContainer.querySelector('input');
+        if (firstInput) {
+            firstInput.focus();
+            firstInput.select();
+        }
 
         const handleSubmit = (e) => {
             e.preventDefault();
-            const value = input.value.trim();
-            if (value) {
+            const formData = new FormData(form);
+            const result = {};
+            let isValid = true;
+
+            for (const [key, value] of formData.entries()) {
+                result[key] = value.trim();
+            }
+
+            // Check for required fields
+            for (const field of config.fields) {
+                if (field.required && !result[field.name]) {
+                    isValid = false;
+                    break;
+                }
+            }
+
+            if (isValid) {
                 cleanup();
-                resolve(value);
+                resolve(result);
             }
         };
 
