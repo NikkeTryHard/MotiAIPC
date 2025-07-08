@@ -1,8 +1,8 @@
 import { dom, icons } from './config.js';
 import { state, calendarState, loadState, getActiveTab, findTaskAndSectionById } from './state.js';
-import { renderAll, updateTimeIndicator, scrollToCurrentTime, showContextMenu, hideContextMenu, initTimePicker, openTimePicker, closeTimePicker } from './ui.js';
+import { renderAll, updateTimeIndicator, scrollToCurrentTime, showContextMenu, hideContextMenu, initTimePicker, openTimePicker } from './ui.js';
 import * as handlers from './handlers.js';
-import { openEventModal, closeEventModal } from './modals.js';
+import { closeEventModal } from './modals.js';
 
 // =================================================================================
 // --- EVENT HANDLERS & INITIALIZATION ---
@@ -17,29 +17,35 @@ function setupEventListeners() {
         if (!e.target.closest('.custom-context-menu')) {
             hideContextMenu();
         }
-        // Inline editing for main title (the only one left with direct click)
-        const editable = e.target.closest('.editable-text');
-        if (editable && !editable.querySelector('input')) {
-            if (editable.id === 'main-title-text') {
-                const activeTab = getActiveTab();
-                if (activeTab) {
-                    handlers.startInlineEdit(editable, (newTitle) => {
+        // All inline editing is now handled via context menus for consistency.
+    });
+
+    // --- Task List & Header Listeners ---
+    dom.addTabBtn.addEventListener('click', handlers.handleAddTab);
+    dom.addSectionBtn.addEventListener('click', handlers.handleAddSection);
+    
+    // Context menu for the main title
+    document.querySelector('.main-header-content').addEventListener('contextmenu', e => {
+        e.preventDefault();
+        const activeTab = getActiveTab();
+        if (!activeTab) return;
+        showContextMenu(e, [
+            {
+                label: 'Rename',
+                icon: icons.rename,
+                action: () => {
+                    handlers.startInlineEdit(dom.mainTitleText, (newTitle) => {
                         activeTab.mainTitle = newTitle;
                         handlers.saveState();
                     });
                 }
             }
-            // NOTE: All other inline edits are now handled via context menus.
-        }
+        ]);
     });
 
-    // --- Task List Listeners ---
-    dom.addTabBtn.addEventListener('click', handlers.handleAddTab);
-    dom.addSectionBtn.addEventListener('click', handlers.handleAddSection);
 
     dom.taskTabsNav.addEventListener('click', e => {
         const tabEl = e.target.closest('.task-tab');
-        // Ensure click is for switching tabs, not for an ongoing inline edit.
         if (tabEl && !e.target.closest('.inline-edit-input') && tabEl.dataset.tabId !== state.activeTabId) {
             handlers.handleSwitchTab(tabEl.dataset.tabId);
         }
@@ -66,7 +72,6 @@ function setupEventListeners() {
                 { label: 'Delete List', class: 'danger', icon: icons.delete, action: () => handlers.handleDeleteTab(tabId) }
             ]);
         } else {
-            // Show global menu for the tab bar itself
             showContextMenu(e, [
                 { label: 'Import List from JSON', icon: icons.import, action: handlers.handleImportTab }
             ]);
@@ -116,10 +121,10 @@ function setupEventListeners() {
                 const dateKey = handlers.formatDateKey(new Date(task.deadline));
                 const eventData = state.events[dateKey]?.find(evt => evt.id === task.deadlineEventId);
                 if (eventData) {
-                    menuItems.push({ label: 'Edit Deadline', icon: icons.deadline, action: () => openEventModal({ title: 'Edit Task Deadline', ...eventData, date: new Date(task.deadline) }) });
+                    menuItems.push({ label: 'Edit Deadline', icon: icons.deadline, action: () => handlers.processEventModal({ title: 'Edit Task Deadline', ...eventData, date: new Date(task.deadline) }) });
                 }
             } else {
-                menuItems.push({ label: 'Set Deadline', icon: icons.deadline, action: () => openEventModal({ title: 'Set Task Deadline', taskId: task.id, eventTitle: task.text, date: calendarState.selectedDate }) });
+                menuItems.push({ label: 'Set Deadline', icon: icons.deadline, action: () => handlers.processEventModal({ title: 'Set Task Deadline', taskId: task.id, eventTitle: task.text, date: calendarState.selectedDate }) });
             }
             menuItems.push({ type: 'divider' });
             menuItems.push({ label: 'Delete Task', class: 'danger', icon: icons.delete, action: () => handlers.handleDeleteTask(taskId, taskEl) });
@@ -134,7 +139,7 @@ function setupEventListeners() {
                     label: 'Rename Section',
                     icon: icons.rename,
                     action: () => {
-                        const titleEl = sectionHeader.querySelector('.section-title .editable-text');
+                        const titleEl = sectionHeader.querySelector('.section-title span');
                         if (titleEl) {
                             handlers.startInlineEdit(titleEl, (newTitle) => handlers.handleRenameSection(sectionId, newTitle));
                         }
@@ -151,7 +156,7 @@ function setupEventListeners() {
     dom.prevMonthBtn.addEventListener('click', () => handlers.handleMonthChange(-1));
     dom.nextMonthBtn.addEventListener('click', () => handlers.handleMonthChange(1));
     dom.calendarGrid.addEventListener('click', handlers.handleDateSelect);
-    dom.addEventButton.addEventListener('click', () => openEventModal({ title: 'Create Event', date: calendarState.selectedDate }));
+    dom.addEventButton.addEventListener('click', () => handlers.processEventModal({ title: 'Create Event', date: calendarState.selectedDate }));
     dom.timelineGrid.addEventListener('click', e => {
         if (!e.target.closest('.timeline-event')) {
             handlers.handleTimelineClick(e);
@@ -162,7 +167,7 @@ function setupEventListeners() {
         const eventId = eventEl.dataset.eventId;
         const dateKey = handlers.formatDateKey(calendarState.selectedDate);
         const eventData = state.events[dateKey]?.find(evt => evt.id === eventId);
-        if (eventData) openEventModal({ title: 'Edit Event', ...eventData, date: calendarState.selectedDate });
+        if (eventData) handlers.processEventModal({ title: 'Edit Event', ...eventData, date: calendarState.selectedDate });
     };
     dom.timelineGrid.addEventListener('dblclick', e => {
         const eventEl = e.target.closest('.timeline-event');
@@ -173,13 +178,8 @@ function setupEventListeners() {
         if (eventEl) openTimelineEventModal(eventEl);
     });
 
-    // --- Modal Listeners ---
-    dom.eventModal.form.addEventListener('submit', handlers.handleEventFormSubmit);
-    dom.eventModal.deleteBtn.addEventListener('click', handlers.handleDeleteEvent);
-    dom.eventModal.cancelBtn.addEventListener('click', closeEventModal);
-    dom.eventModal.backdrop.addEventListener('click', (e) => { if (e.target === dom.eventModal.backdrop) closeEventModal(); });
-    dom.eventModal.allDayCheckbox.addEventListener('change', handlers.handleAllDayToggle);
-    dom.eventModal.colorPicker.addEventListener('click', handlers.handleColorPick);
+    // --- Modal Listeners (Now handled within the promise-based modal functions) ---
+    // Note: The direct listeners for the event modal are removed as they are now encapsulated.
 
     // --- Custom Time Picker Listeners ---
     dom.eventModal.startTimeDisplay.addEventListener('click', (e) => {

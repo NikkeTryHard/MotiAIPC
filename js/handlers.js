@@ -1,7 +1,7 @@
 import { dom, icons } from './config.js';
 import { state, calendarState, saveState, getActiveTab, findTaskAndSectionById } from './state.js';
 import { renderAll, renderTabs, renderActiveTabContent, renderCalendar, renderTimelineAndSummary, createSectionEl, createTaskEl, updateProgress, renderEmptyState } from './ui.js';
-import { openPromptModal, openConfirmModal, openEventModal, closeEventModal } from './modals.js';
+import { openPromptModal, openConfirmModal, openEventModal } from './modals.js';
 
 // --- UTILITY ---
 export const formatDateKey = (date) => {
@@ -68,7 +68,7 @@ export async function handleAddTab() {
         state.tabs.push(newTab);
         state.activeTabId = newTab.id;
         saveState();
-        renderAll(); // Full render is appropriate here
+        renderAll();
     } catch (error) {
         console.log("MotiOS_TABS: Add tab action cancelled by user.");
     }
@@ -79,7 +79,7 @@ export function handleRenameTab(tabId, newTitle) {
     if (!tab) return;
     tab.title = newTitle;
     saveState();
-    renderTabs(); // Just re-render tabs, not everything
+    // UI is updated by startInlineEdit, no full re-render needed
 }
 
 export async function handleDeleteTab(tabId) {
@@ -101,7 +101,7 @@ export async function handleDeleteTab(tabId) {
             state.activeTabId = state.tabs[0].id;
         }
         saveState();
-        renderAll(); // Full render is appropriate here
+        renderAll();
     }
 }
 
@@ -121,7 +121,7 @@ export async function handleAddSection() {
         activeTab.sections.push(newSection);
         saveState();
 
-        renderEmptyState(); // Remove empty state message if it exists
+        renderEmptyState();
         const sectionEl = createSectionEl(newSection);
         dom.sectionsContainer.appendChild(sectionEl);
         updateProgress();
@@ -135,7 +135,6 @@ export function handleRenameSection(sectionId, newTitle) {
     if (!section) return;
     section.title = newTitle;
     saveState();
-    // The UI is updated by startInlineEdit, no re-render needed
 }
 
 export async function handleDeleteSection(sectionId, sectionEl) {
@@ -184,7 +183,6 @@ export function handleEditTask(taskId, newText) {
     if (!task) return;
     task.text = newText;
     saveState();
-    // The UI is updated by startInlineEdit, no re-render needed
 }
 
 export async function handleDeleteTask(taskId, taskEl) {
@@ -197,7 +195,6 @@ export async function handleDeleteTask(taskId, taskEl) {
     });
 
     if (confirmed) {
-        // If task has a deadline, remove the associated event
         if (task.deadlineEventId) {
             const dateKey = formatDateKey(new Date(task.deadline));
             if (state.events[dateKey]) {
@@ -205,7 +202,6 @@ export async function handleDeleteTask(taskId, taskEl) {
                 if (state.events[dateKey].length === 0) {
                     delete state.events[dateKey];
                 }
-                // Targeted render instead of renderAll()
                 renderCalendar();
                 renderTimelineAndSummary();
             }
@@ -290,7 +286,6 @@ export function handleImportTab() {
                 const content = readerEvent.target.result;
                 const data = JSON.parse(content);
 
-                // Validate and sanitize imported data
                 if (!data.title || !Array.isArray(data.sections)) {
                     throw new Error("Invalid JSON format for a MotiOS list.");
                 }
@@ -308,7 +303,6 @@ export function handleImportTab() {
                             text: task.text || "Imported Task",
                             completed: task.completed || false,
                             deadline: task.deadline || undefined,
-                            // Note: deadlineEventId is not imported as it's tied to specific event state
                         }))
                     }))
                 };
@@ -316,7 +310,7 @@ export function handleImportTab() {
                 state.tabs.push(newTab);
                 state.activeTabId = newTab.id;
                 saveState();
-                renderAll(); // Full render is appropriate for a new tab
+                renderAll();
                 console.log(`MotiOS_IMPORT: Successfully imported list "${newTab.title}".`);
             } catch (error) {
                 console.error("MotiOS_IMPORT: Failed to import file.", error);
@@ -327,7 +321,6 @@ export function handleImportTab() {
     };
     input.click();
 }
-
 
 // --- CALENDAR & EVENT HANDLERS ---
 export function handleMonthChange(monthOffset) {
@@ -361,7 +354,7 @@ export function handleTimelineClick(e) {
     date.setHours(date.getHours() + 1);
     const endTime = date.toTimeString().substring(0, 5);
 
-    openEventModal({
+    processEventModal({
         title: 'Create Event',
         date: calendarState.selectedDate,
         startTime,
@@ -369,107 +362,73 @@ export function handleTimelineClick(e) {
     });
 }
 
-export function handleEventFormSubmit(e) {
-    e.preventDefault();
-    const form = dom.eventModal.form;
-    const id = form.elements['event-id'].value || generateId('evt');
-    const taskId = form.elements['task-id'].value;
-    const dateKey = form.elements['event-date'].value;
-    const isAllDay = form.elements['all-day-checkbox'].checked;
+export async function processEventModal(config) {
+    try {
+        const result = await openEventModal(config);
 
-    const newEvent = {
-        id,
-        taskId: taskId || null,
-        title: form.elements['event-title'].value,
-        allDay: isAllDay,
-        startTime: isAllDay ? '00:00' : dom.eventModal.startTimeInput.value,
-        endTime: isAllDay ? '23:59' : dom.eventModal.endTimeInput.value,
-        color: form.elements['event-color'].value,
-    };
-
-    if (!state.events[dateKey]) state.events[dateKey] = [];
-    const eventIndex = state.events[dateKey].findIndex(evt => evt.id === id);
-    if (eventIndex > -1) {
-        state.events[dateKey][eventIndex] = newEvent;
-    } else {
-        state.events[dateKey].push(newEvent);
-    }
-
-    if (taskId) {
-        const { task } = findTaskAndSectionById(taskId);
-        if (task) {
-            task.deadline = isAllDay ? `${dateKey}T00:00` : `${dateKey}T${newEvent.startTime}`;
-            task.deadlineEventId = id;
-        }
-    }
-    
-    saveState();
-    
-    // Targeted rendering instead of renderAll()
-    renderCalendar();
-    renderTimelineAndSummary();
-    if (taskId) {
-        renderActiveTabContent(); // Re-render tasks if a deadline was changed
-    }
-    
-    closeEventModal();
-}
-
-export async function handleDeleteEvent() {
-    const form = dom.eventModal.form;
-    const eventId = form.elements['event-id'].value;
-    const dateKey = form.elements['event-date'].value;
-    if (!eventId || !dateKey) return;
-
-    const confirmed = await openConfirmModal({
-        title: "Delete Event?",
-        message: "Are you sure you want to delete this event? This action cannot be undone.",
-    });
-
-    if (confirmed) {
-        if (!state.events[dateKey]) return;
-        const eventIndex = state.events[dateKey].findIndex(evt => evt.id === eventId);
-        if (eventIndex > -1) {
-            const [deletedEvent] = state.events[dateKey].splice(eventIndex, 1);
-            if (state.events[dateKey].length === 0) delete state.events[dateKey];
+        if (result.action === 'save') {
+            const newEvent = result.data;
+            const { id, taskId, dateKey, isAllDay } = newEvent;
             
-            let taskWasAffected = false;
-            if (deletedEvent.taskId) {
-                const { task } = findTaskAndSectionById(deletedEvent.taskId);
+            if (!state.events[dateKey]) state.events[dateKey] = [];
+            const eventIndex = state.events[dateKey].findIndex(evt => evt.id === id);
+            
+            const eventToSave = { ...newEvent };
+            delete eventToSave.dateKey;
+            delete eventToSave.isAllDay;
+
+            if (eventIndex > -1) {
+                state.events[dateKey][eventIndex] = eventToSave;
+            } else {
+                state.events[dateKey].push(eventToSave);
+            }
+
+            if (taskId) {
+                const { task } = findTaskAndSectionById(taskId);
                 if (task) {
-                    delete task.deadline;
-                    delete task.deadlineEventId;
-                    taskWasAffected = true;
+                    task.deadline = isAllDay ? `${dateKey}T00:00` : `${dateKey}T${eventToSave.startTime}`;
+                    task.deadlineEventId = id;
                 }
             }
             
             saveState();
-
-            // Targeted rendering instead of renderAll()
             renderCalendar();
             renderTimelineAndSummary();
-            if (taskWasAffected) {
-                renderActiveTabContent();
+            if (taskId) renderActiveTabContent();
+
+        } else if (result.action === 'delete') {
+            const { eventId, dateKey } = result.data;
+            const confirmed = await openConfirmModal({
+                title: "Delete Event?",
+                message: "Are you sure you want to delete this event? This action cannot be undone.",
+            });
+
+            if (confirmed) {
+                if (!state.events[dateKey]) return;
+                const eventIndex = state.events[dateKey].findIndex(evt => evt.id === eventId);
+                if (eventIndex > -1) {
+                    const [deletedEvent] = state.events[dateKey].splice(eventIndex, 1);
+                    if (state.events[dateKey].length === 0) delete state.events[dateKey];
+                    
+                    let taskWasAffected = false;
+                    if (deletedEvent.taskId) {
+                        const { task } = findTaskAndSectionById(deletedEvent.taskId);
+                        if (task) {
+                            delete task.deadline;
+                            delete task.deadlineEventId;
+                            taskWasAffected = true;
+                        }
+                    }
+                    
+                    saveState();
+                    renderCalendar();
+                    renderTimelineAndSummary();
+                    if (taskWasAffected) renderActiveTabContent();
+                }
             }
-
-            closeEventModal();
         }
-    }
-}
-
-export function handleAllDayToggle(e) {
-    const isChecked = e.target.checked;
-    dom.eventModal.form.classList.toggle('all-day-active', isChecked);
-    dom.eventModal.startTimeInput.required = !isChecked;
-    dom.eventModal.endTimeInput.required = !isChecked;
-}
-
-export function handleColorPick(e) {
-    const target = e.target.closest('.color-option');
-    if (target) {
-        document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
-        target.classList.add('selected');
-        dom.eventModal.form.elements['event-color'].value = target.dataset.color;
+    } catch (error) {
+        console.log(`MotiOS_MODAL: ${error.message}`);
     }
 }
 
@@ -539,7 +498,6 @@ export function handleDrop(e) {
     const afterElement = getDragAfterElement(container, e.clientX, e.clientY);
     const draggedId = draggedItem.dataset.id || draggedItem.dataset.tabId;
     
-    // Modify state first
     if (draggedItem.matches('.task-tab')) {
         const fromIndex = state.tabs.findIndex(t => t.id === draggedId);
         const toIndex = afterElement ? state.tabs.findIndex(t => t.id === afterElement.dataset.tabId) : state.tabs.length;

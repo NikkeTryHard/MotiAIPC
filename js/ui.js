@@ -72,7 +72,7 @@ export function createSectionEl(sectionData) {
         <div class="section-header">
             ${icons.grip}
             <h3 class="section-title">
-                <span class="editable-text">${sectionData.title}</span>
+                <span>${sectionData.title}</span>
             </h3>
             <div class="section-controls">
                 <button class="section-control-btn add-task-btn" title="Add Task">${icons.add}</button>
@@ -233,7 +233,7 @@ function renderDailySummary() {
     }
 
     dayEvents.sort((a, b) => a.allDay ? -1 : b.allDay ? 1 : a.startTime.localeCompare(b.startTime)).forEach(event => {
-        const time = event.allDay ? 'All-day' : `${event.startTime} - ${event.endTime}`;
+        const time = event.allDay ? 'All-day' : `${formatTimeForDisplay(event.startTime)} - ${formatTimeForDisplay(event.endTime)}`;
         const itemEl = document.createElement('div');
         itemEl.className = 'summary-item';
         itemEl.innerHTML = `
@@ -314,7 +314,6 @@ export function initTimePicker() {
     console.log("MotiOS_TIMEPICKER: Initializing custom time picker.");
     const { container, hours, minutes, period } = dom.timePicker;
 
-    // Populate columns
     for (let i = 1; i <= 12; i++) hours.innerHTML += `<div class="time-picker-option" data-value="${String(i).padStart(2, '0')}">${String(i).padStart(2, '0')}</div>`;
     for (let i = 0; i < 60; i += 5) minutes.innerHTML += `<div class="time-picker-option" data-value="${String(i).padStart(2, '0')}">${String(i).padStart(2, '0')}</div>`;
     period.innerHTML += `<div class="time-picker-option" data-value="AM">AM</div>`;
@@ -324,6 +323,9 @@ export function initTimePicker() {
         e.stopPropagation();
         const option = e.target.closest('.time-picker-option');
         if (option && activeTimePickerTarget) {
+            const column = option.parentElement;
+            column.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+            option.classList.add('selected');
             updateTimeFromPicker();
         }
     });
@@ -335,14 +337,13 @@ export function openTimePicker(targetButton) {
     activeTimePickerTarget = targetButton;
 
     const hiddenInput = targetButton.id === 'start-time-display' ? dom.eventModal.startTimeInput : dom.eventModal.endTimeInput;
-    const currentTime = hiddenInput.value; // "HH:mm"
+    const currentTime = hiddenInput.value;
     const [currentHour24, currentMinute] = currentTime.split(':').map(Number);
 
     let currentHour12 = currentHour24 % 12;
     if (currentHour12 === 0) currentHour12 = 12;
     const currentPeriod = currentHour24 >= 12 ? 'PM' : 'AM';
 
-    // Set selected states
     [hours, minutes, period].forEach(col => col.querySelectorAll('.selected').forEach(el => el.classList.remove('selected')));
     
     const hourEl = hours.querySelector(`[data-value="${String(currentHour12).padStart(2, '0')}"]`);
@@ -353,11 +354,9 @@ export function openTimePicker(targetButton) {
     if(minuteEl) minuteEl.classList.add('selected');
     if(periodEl) periodEl.classList.add('selected');
 
-    // Scroll into view
     if(hourEl) hourEl.scrollIntoView({ block: 'center' });
     if(minuteEl) minuteEl.scrollIntoView({ block: 'center' });
 
-    // Position and show
     const rect = targetButton.getBoundingClientRect();
     container.style.top = `${rect.bottom + 5}px`;
     container.style.left = `${rect.left}px`;
@@ -370,15 +369,16 @@ function closeTimePickerOnClickOutside(e) {
     if (!dom.timePicker.container.contains(e.target)) {
         closeTimePicker();
     } else {
-        // Re-add listener if click was inside picker
         document.addEventListener('click', closeTimePickerOnClickOutside, { once: true });
     }
 }
 
-export function closeTimePicker() {
-    console.log("MotiOS_TIMEPICKER: Closing time picker.");
-    dom.timePicker.container.classList.add('hidden');
-    activeTimePickerTarget = null;
+function closeTimePicker() {
+    if (!dom.timePicker.container.classList.contains('hidden')) {
+        console.log("MotiOS_TIMEPICKER: Closing time picker.");
+        dom.timePicker.container.classList.add('hidden');
+        activeTimePickerTarget = null;
+    }
 }
 
 function updateTimeFromPicker() {
@@ -389,7 +389,6 @@ function updateTimeFromPicker() {
     const minute = minutes.querySelector('.selected')?.dataset.value || '00';
     const periodVal = period.querySelector('.selected')?.dataset.value || 'AM';
 
-    // Convert to 24h format
     let hour24 = parseInt(hour12, 10);
     if (periodVal === 'PM' && hour24 < 12) {
         hour24 += 12;
@@ -398,18 +397,15 @@ function updateTimeFromPicker() {
     }
     const time24h = `${String(hour24).padStart(2, '0')}:${minute}`;
 
-    // Update DOM
     const hiddenInput = activeTimePickerTarget.id === 'start-time-display' ? dom.eventModal.startTimeInput : dom.eventModal.endTimeInput;
     hiddenInput.value = time24h;
     activeTimePickerTarget.textContent = formatTimeForDisplay(time24h);
 }
 
 export function formatTimeForDisplay(time24h) {
-    if (!time24h) return '00:00 AM';
+    if (!time24h) return '12:00 AM';
     const [h, m] = time24h.split(':');
-    const hour = parseInt(h, 10);
-    const period = hour >= 12 ? 'PM' : 'AM';
-    let hour12 = hour % 12;
-    if (hour12 === 0) hour12 = 12;
-    return `${String(hour12).padStart(2, '0')}:${m} ${period}`;
+    const date = new Date();
+    date.setHours(parseInt(h, 10), parseInt(m, 10));
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 }
