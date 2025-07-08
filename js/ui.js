@@ -21,7 +21,7 @@ export function renderTabs() {
         tabEl.className = 'task-tab draggable';
         tabEl.dataset.tabId = tab.id;
         tabEl.draggable = true;
-        tabEl.innerHTML = `${icons.grip} <span class="tab-title editable-text">${tab.title}</span>`;
+        tabEl.innerHTML = `${icons.grip} <span class="tab-title">${tab.title}</span>`;
         if (tab.id === state.activeTabId) tabEl.classList.add('active');
         dom.taskTabsNav.insertBefore(tabEl, dom.addTabBtn);
     });
@@ -99,7 +99,7 @@ export function createTaskEl(taskData) {
             <label for="${uniqueId}">
                 <span class="custom-checkbox"><span class="checkmark"></span></span>
                 <div class="task-text-content">
-                    <span class="task-text editable-text">${taskData.text}</span>
+                    <span class="task-text">${taskData.text}</span>
                 </div>
             </label>
         </div>

@@ -17,7 +17,7 @@ function setupEventListeners() {
         if (!e.target.closest('.custom-context-menu')) {
             hideContextMenu();
         }
-        // Inline editing listeners for elements where left-click is intuitive
+        // Inline editing for main title (the only one left with direct click)
         const editable = e.target.closest('.editable-text');
         if (editable && !editable.querySelector('input')) {
             if (editable.id === 'main-title-text') {
@@ -28,12 +28,8 @@ function setupEventListeners() {
                         handlers.saveState();
                     });
                 }
-            } else if (editable.closest('.section-title')) {
-                const sectionId = editable.closest('.section').dataset.id;
-                handlers.startInlineEdit(editable, (newTitle) => handlers.handleRenameSection(sectionId, newTitle));
             }
-            // NOTE: Inline editing for tabs and tasks has been moved to the context menu
-            // to prevent accidental edits and checkbox toggling.
+            // NOTE: All other inline edits are now handled via context menus.
         }
     });
 
@@ -68,6 +64,11 @@ function setupEventListeners() {
                 { label: 'Export to JSON', icon: icons.export, action: () => handlers.handleExportTab(tabId) },
                 { type: 'divider' },
                 { label: 'Delete List', class: 'danger', icon: icons.delete, action: () => handlers.handleDeleteTab(tabId) }
+            ]);
+        } else {
+            // Show global menu for the tab bar itself
+            showContextMenu(e, [
+                { label: 'Import List from JSON', icon: icons.import, action: handlers.handleImportTab }
             ]);
         }
     });
@@ -129,6 +130,16 @@ function setupEventListeners() {
             const sectionEl = sectionHeader.closest('.section');
             const sectionId = sectionEl.dataset.id;
             showContextMenu(e, [
+                {
+                    label: 'Rename Section',
+                    icon: icons.rename,
+                    action: () => {
+                        const titleEl = sectionHeader.querySelector('.section-title .editable-text');
+                        if (titleEl) {
+                            handlers.startInlineEdit(titleEl, (newTitle) => handlers.handleRenameSection(sectionId, newTitle));
+                        }
+                    }
+                },
                 { label: 'Add Task to Section', icon: icons.add, action: () => handlers.handleAddTask(sectionId) },
                 { type: 'divider' },
                 { label: 'Delete Section', class: 'danger', icon: icons.delete, action: () => handlers.handleDeleteSection(sectionId, sectionEl) }
@@ -165,8 +176,8 @@ function setupEventListeners() {
     // --- Modal Listeners ---
     dom.eventModal.form.addEventListener('submit', handlers.handleEventFormSubmit);
     dom.eventModal.deleteBtn.addEventListener('click', handlers.handleDeleteEvent);
-    dom.eventModal.cancelBtn.addEventListener('click', closeEventModal); // FIX: Directly call imported function
-    dom.eventModal.backdrop.addEventListener('click', (e) => { if (e.target === dom.eventModal.backdrop) closeEventModal(); }); // FIX: Directly call imported function
+    dom.eventModal.cancelBtn.addEventListener('click', closeEventModal);
+    dom.eventModal.backdrop.addEventListener('click', (e) => { if (e.target === dom.eventModal.backdrop) closeEventModal(); });
     dom.eventModal.allDayCheckbox.addEventListener('change', handlers.handleAllDayToggle);
     dom.eventModal.colorPicker.addEventListener('click', handlers.handleColorPick);
 

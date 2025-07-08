@@ -1,4 +1,4 @@
-import { dom } from './config.js';
+import { dom, icons } from './config.js';
 import { state, calendarState, saveState, getActiveTab, findTaskAndSectionById } from './state.js';
 import { renderAll, renderTabs, renderActiveTabContent, renderCalendar, renderTimelineAndSummary, createSectionEl, createTaskEl, updateProgress, renderEmptyState } from './ui.js';
 import { openPromptModal, openConfirmModal, openEventModal, closeEventModal } from './modals.js';
@@ -30,6 +30,15 @@ export function startInlineEdit(element, onSave) {
     input.focus();
     input.select();
 
+    const cleanup = () => {
+        input.removeEventListener('blur', saveChanges);
+        input.removeEventListener('keydown', handleKey);
+        if (document.body.contains(input)) {
+            input.remove();
+        }
+        element.style.display = '';
+    };
+
     const saveChanges = () => {
         const newValue = input.value.trim();
         if (newValue) {
@@ -39,19 +48,16 @@ export function startInlineEdit(element, onSave) {
         cleanup();
     };
 
-    const cleanup = () => {
-        input.remove();
-        element.style.display = '';
-    };
-
-    input.addEventListener('blur', saveChanges);
-    input.addEventListener('keydown', (e) => {
+    const handleKey = (e) => {
         if (e.key === 'Enter') {
             saveChanges();
         } else if (e.key === 'Escape') {
             cleanup();
         }
-    });
+    };
+
+    input.addEventListener('blur', saveChanges);
+    input.addEventListener('keydown', handleKey);
 }
 
 // --- TABS, SECTIONS, & TASKS HANDLERS ---
@@ -62,7 +68,7 @@ export async function handleAddTab() {
         state.tabs.push(newTab);
         state.activeTabId = newTab.id;
         saveState();
-        renderAll();
+        renderAll(); // Full render is appropriate here
     } catch (error) {
         console.log("MotiOS_TABS: Add tab action cancelled by user.");
     }
@@ -95,7 +101,7 @@ export async function handleDeleteTab(tabId) {
             state.activeTabId = state.tabs[0].id;
         }
         saveState();
-        renderAll();
+        renderAll(); // Full render is appropriate here
     }
 }
 
@@ -129,6 +135,7 @@ export function handleRenameSection(sectionId, newTitle) {
     if (!section) return;
     section.title = newTitle;
     saveState();
+    // The UI is updated by startInlineEdit, no re-render needed
 }
 
 export async function handleDeleteSection(sectionId, sectionEl) {
@@ -177,6 +184,7 @@ export function handleEditTask(taskId, newText) {
     if (!task) return;
     task.text = newText;
     saveState();
+    // The UI is updated by startInlineEdit, no re-render needed
 }
 
 export async function handleDeleteTask(taskId, taskEl) {
@@ -197,6 +205,7 @@ export async function handleDeleteTask(taskId, taskEl) {
                 if (state.events[dateKey].length === 0) {
                     delete state.events[dateKey];
                 }
+                // Targeted render instead of renderAll()
                 renderCalendar();
                 renderTimelineAndSummary();
             }
@@ -264,6 +273,62 @@ export function handleExportTab(tabId) {
     console.log(`MotiOS_EXPORT: Exported tab "${tab.title}"`);
 }
 
+export function handleImportTab() {
+    console.log("MotiOS_IMPORT: Initiating tab import.");
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json';
+    input.onchange = e => {
+        const file = e.target.files[0];
+        if (!file) {
+            console.log("MotiOS_IMPORT: No file selected.");
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = readerEvent => {
+            try {
+                const content = readerEvent.target.result;
+                const data = JSON.parse(content);
+
+                // Validate and sanitize imported data
+                if (!data.title || !Array.isArray(data.sections)) {
+                    throw new Error("Invalid JSON format for a MotiOS list.");
+                }
+
+                const newTab = {
+                    id: generateId('tab'),
+                    title: data.title || "Imported List",
+                    mainTitle: data.mainTitle || "Today's Momentum",
+                    sections: data.sections.map(section => ({
+                        id: generateId('sec'),
+                        title: section.title || "Imported Section",
+                        collapsed: section.collapsed || false,
+                        tasks: (section.tasks || []).map(task => ({
+                            id: generateId('task'),
+                            text: task.text || "Imported Task",
+                            completed: task.completed || false,
+                            deadline: task.deadline || undefined,
+                            // Note: deadlineEventId is not imported as it's tied to specific event state
+                        }))
+                    }))
+                };
+
+                state.tabs.push(newTab);
+                state.activeTabId = newTab.id;
+                saveState();
+                renderAll(); // Full render is appropriate for a new tab
+                console.log(`MotiOS_IMPORT: Successfully imported list "${newTab.title}".`);
+            } catch (error) {
+                console.error("MotiOS_IMPORT: Failed to import file.", error);
+                alert(`Error importing file: ${error.message}`);
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
+
+
 // --- CALENDAR & EVENT HANDLERS ---
 export function handleMonthChange(monthOffset) {
     calendarState.currentDate.setMonth(calendarState.currentDate.getMonth() + monthOffset);
@@ -288,7 +353,6 @@ export function handleTimelineClick(e) {
     const hour = Math.floor(hourDecimal);
     const minute = Math.floor((hourDecimal - hour) * 60);
     
-    // Snap to nearest 15 minutes
     const snappedMinute = Math.round(minute / 15) * 15;
     const date = new Date(calendarState.selectedDate);
     date.setHours(hour, snappedMinute, 0, 0);
@@ -338,8 +402,16 @@ export function handleEventFormSubmit(e) {
             task.deadlineEventId = id;
         }
     }
+    
     saveState();
-    renderAll();
+    
+    // Targeted rendering instead of renderAll()
+    renderCalendar();
+    renderTimelineAndSummary();
+    if (taskId) {
+        renderActiveTabContent(); // Re-render tasks if a deadline was changed
+    }
+    
     closeEventModal();
 }
 
@@ -360,15 +432,26 @@ export async function handleDeleteEvent() {
         if (eventIndex > -1) {
             const [deletedEvent] = state.events[dateKey].splice(eventIndex, 1);
             if (state.events[dateKey].length === 0) delete state.events[dateKey];
+            
+            let taskWasAffected = false;
             if (deletedEvent.taskId) {
                 const { task } = findTaskAndSectionById(deletedEvent.taskId);
                 if (task) {
                     delete task.deadline;
                     delete task.deadlineEventId;
+                    taskWasAffected = true;
                 }
             }
+            
             saveState();
-            renderAll();
+
+            // Targeted rendering instead of renderAll()
+            renderCalendar();
+            renderTimelineAndSummary();
+            if (taskWasAffected) {
+                renderActiveTabContent();
+            }
+
             closeEventModal();
         }
     }
@@ -456,11 +539,13 @@ export function handleDrop(e) {
     const afterElement = getDragAfterElement(container, e.clientX, e.clientY);
     const draggedId = draggedItem.dataset.id || draggedItem.dataset.tabId;
     
+    // Modify state first
     if (draggedItem.matches('.task-tab')) {
         const fromIndex = state.tabs.findIndex(t => t.id === draggedId);
         const toIndex = afterElement ? state.tabs.findIndex(t => t.id === afterElement.dataset.tabId) : state.tabs.length;
         const [item] = state.tabs.splice(fromIndex, 1);
         state.tabs.splice(toIndex > fromIndex ? toIndex -1 : toIndex, 0, item);
+        saveState();
         renderTabs();
     } else if (draggedItem.matches('.section')) {
         const activeTab = getActiveTab();
@@ -469,6 +554,7 @@ export function handleDrop(e) {
         const toIndex = afterElement ? activeTab.sections.findIndex(s => s.id === afterElement.dataset.id) : activeTab.sections.length;
         const [item] = activeTab.sections.splice(fromIndex, 1);
         activeTab.sections.splice(toIndex > fromIndex ? toIndex -1 : toIndex, 0, item);
+        saveState();
         renderActiveTabContent();
     } else if (draggedItem.matches('li.draggable')) {
         const activeTab = getActiveTab();
@@ -488,7 +574,7 @@ export function handleDrop(e) {
         } else {
              endSection.tasks.splice(toIndex, 0, item);
         }
+        saveState();
         renderActiveTabContent();
     }
-    saveState();
 }
