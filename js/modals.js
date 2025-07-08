@@ -24,8 +24,8 @@ export function openEventModal(config) {
     title.textContent = config.title;
 
     eventTitleInput.value = config.eventTitle || '';
-    eventTitleInput.readOnly = !!config.taskId;
-    eventTitleInput.classList.toggle('readonly', !!config.taskId);
+    eventTitleInput.readOnly = false; // Always allow editing
+    eventTitleInput.classList.remove('readonly');
 
     const eventId =
       config.id ||

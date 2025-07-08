@@ -1,12 +1,29 @@
 {
+  // Set Prettier as the default formatter for all languages.
+  // VS Code will automatically use it for files Prettier supports.
   "editor.defaultFormatter": "esbenp.prettier-vscode",
+
+  // Enable format on save for all languages.
   "editor.formatOnSave": true,
+
+  // Automatically fix ESLint and Stylelint problems on save.
+  // This runs after formatting, so it won't conflict with Prettier.
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit",
     "source.fixAll.stylelint": "explicit"
   },
+
+  // Optional: To prevent conflicts, disable the editor's built-in
+  // validators for CSS/SCSS/Less since Stylelint will handle it.
   "css.validate": false,
-  "less.validate": false,
   "scss.validate": false,
-  "eslint.validate": ["javascript", "javascriptreact"]
+  "less.validate": false,
+
+  // Tell the ESLint extension which files to validate.
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ]
 }

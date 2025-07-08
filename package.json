@@ -1,20 +1,30 @@
 {
-  "name": "motiospc",
+  "name": "motiaipc",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "A modern task and schedule management application.",
+  "main": "js/main.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "live-server",
+    "format": "prettier --write .",
+    "lint:js": "eslint .",
+    "lint:css": "stylelint \"**/*.css\"",
+    "lint": "npm run lint:js && npm run lint:css"
   },
-  "keywords": [],
+  "keywords": [
+    "task-manager",
+    "scheduler",
+    "productivity"
+  ],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "devDependencies": {
-    "@eslint/js": "^9.30.1",
-    "eslint": "^9.30.1",
-    "globals": "^16.3.0",
-    "stylelint": "^16.21.1",
-    "stylelint-config-standard": "^38.0.0"
+    "@eslint/js": "^9.5.0",
+    "eslint": "^9.5.0",
+    "eslint-config-prettier": "^9.1.0",
+    "globals": "^15.6.0",
+    "prettier": "^3.3.2",
+    "stylelint": "^16.6.1",
+    "stylelint-config-standard": "^36.0.0"
   }
 }

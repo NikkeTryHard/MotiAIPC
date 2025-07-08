@@ -169,6 +169,5 @@ export function updateProgress() {
   if (dom.progressBar) dom.progressBar.style.width = `${percentage}%`;
   if (dom.progressText)
     dom.progressText.textContent = `${completedTasks} of ${totalTasks} tasks completed`;
-  document.title =
-    totalTasks > 0 ? `(${completedTasks}/${totalTasks}) MotiAI` : 'MotiAI';
+  document.title = 'MotiAI';
 }
