@@ -1,6 +1,6 @@
 import { dom, icons } from './config.js';
 import { state, calendarState, loadState, getActiveTab, findTaskInfoById, findSectionInfoById, actions, activeInlineEdit } from './state.js';
-import { renderAll, updateTimeIndicator, scrollToCurrentTime, showContextMenu, hideContextMenu, initTimePicker, openTimePicker, startInlineEdit, renderActiveTabContent, updateIcons } from './ui.js';
+import { renderAll, updateTimeIndicator, scrollToCurrentTime, showContextMenu, hideContextMenu, initTimePicker, openTimePicker, startInlineEdit, renderActiveTabContent, updateLogoIcon } from './ui.js';
 import * as handlers from './handlers.js';
 
 // =================================================================================
@@ -185,7 +185,7 @@ async function init() {
     document.documentElement.setAttribute('data-color-theme', savedColorTheme);
     dom.themeToggle.checked = savedTheme === 'dark';
     dom.themeColorBtn.innerHTML = icons.palette;
-    updateIcons(savedTheme);
+    updateLogoIcon(savedTheme);
 
     await loadState();
     initTimePicker();

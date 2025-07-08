@@ -15,6 +15,7 @@ export function openEventModal(config) {
         eventTitleInput.classList.toggle('readonly', !!config.taskId);
 
         const eventId = config.id || `evt-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        const taskId = config.taskId; // Capture taskId
         const date = config.date ? new Date(config.date) : new Date();
         const dateKey = formatDateKey(date);
         form.elements['event-date'].value = dateKey;
@@ -53,7 +54,7 @@ export function openEventModal(config) {
 
             const eventData = {
                 id: eventId,
-                taskId: config.taskId || null,
+                taskId: taskId || null,
                 title: form.elements['event-title'].value,
                 allDay: form.elements['all-day-checkbox'].checked,
                 startTime: form.elements['all-day-checkbox'].checked ? '00:00' : startTimeInput.value,
@@ -69,7 +70,7 @@ export function openEventModal(config) {
 
         const handleDelete = () => {
             cleanup();
-            resolve({ action: 'delete', data: { eventId, dateKey } });
+            resolve({ action: 'delete', data: { eventId, dateKey, taskId } }); // Pass taskId on delete
         };
 
         const handleCancel = () => {

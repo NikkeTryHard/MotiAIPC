@@ -1,6 +1,6 @@
 import { dom, icons } from './config.js';
 import { state, calendarState, actions, getActiveTab, findTaskInfoById, findTabById } from './state.js';
-import { renderAll, renderTabs, renderActiveTabContent, renderCalendar, renderTimelineAndSummary, highlightTask, showToast, startInlineEdit, removeElementWithAnimation, addElement, updateTaskEl, updateIcons } from './ui.js';
+import { renderAll, renderTabs, renderActiveTabContent, renderCalendar, renderTimelineAndSummary, highlightTask, showToast, startInlineEdit, removeElementWithAnimation, addElement, updateTaskEl, updateLogoIcon } from './ui.js';
 import { openPromptModal, openConfirmModal, openEventModal } from './modals.js';
 
 const COLOR_THEMES = ['default', 'velvet'];
@@ -18,7 +18,7 @@ export function handleThemeToggle() {
     const newTheme = dom.themeToggle.checked ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('motiAITheme', newTheme);
-    updateIcons(newTheme);
+    updateLogoIcon(newTheme);
 }
 
 export function handleThemeColorChange() {
@@ -290,7 +290,11 @@ export async function processEventModal(config) {
             if (confirmed) {
                 actions.deleteEvent(eventId, dateKey);
                 const { task } = findTaskInfoById(taskId) || {};
-                if (task) updateTaskEl(task.id, task);
+                if (task) {
+                    // The task object in state is already updated by actions.deleteEvent
+                    // We just need to re-render its element to reflect the change
+                    updateTaskEl(task.id, task);
+                }
             }
         }
         renderCalendar();

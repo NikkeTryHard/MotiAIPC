@@ -268,7 +268,8 @@ export const actions = {
         delete eventToSave.isAllDay;
 
         if (eventIndex > -1) {
-            state.events[dateKey][eventIndex] = eventToSave;
+            // Merge new data into existing event to prevent data loss
+            Object.assign(state.events[dateKey][eventIndex], eventToSave);
         } else {
             state.events[dateKey].push(eventToSave);
         }

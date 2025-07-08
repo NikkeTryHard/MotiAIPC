@@ -1,6 +1,7 @@
 export const dom = {
     themeToggle: document.getElementById('theme-toggle-checkbox'),
     themeColorBtn: document.getElementById('theme-color-btn'),
+    logoIcon: document.getElementById('logo-icon'),
     mainTitleText: document.getElementById('main-title-text'),
     taskTabsNav: document.getElementById('task-tabs-nav'),
     addTabBtn: document.getElementById('add-tab-btn'),
@@ -59,13 +60,6 @@ export const dom = {
         period: document.getElementById('time-picker-period'),
     },
     toastContainer: document.getElementById('toast-container'),
-    favicons: {
-        appleTouchIcon: document.getElementById('apple-touch-icon'),
-        favicon192: document.getElementById('favicon-192'),
-        favicon32: document.getElementById('favicon-32'),
-        favicon16: document.getElementById('favicon-16'),
-        shortcutIcon: document.getElementById('shortcut-icon'),
-    },
 };
 
 export const icons = {

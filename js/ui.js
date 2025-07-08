@@ -321,13 +321,11 @@ export function highlightTask(taskId) {
 }
 
 // --- ICONS, CONTEXT MENU, TIME PICKER, TOAST, INLINE EDIT ---
-export function updateIcons(theme) {
-    const iconPath = theme === 'dark' ? 'white_icons' : 'icons';
-    if (dom.favicons.appleTouchIcon) dom.favicons.appleTouchIcon.href = `${iconPath}/apple-touch-icon.png`;
-    if (dom.favicons.favicon192) dom.favicons.favicon192.href = `${iconPath}/favicon-192x192.png`;
-    if (dom.favicons.favicon32) dom.favicons.favicon32.href = `${iconPath}/favicon-32x32.png`;
-    if (dom.favicons.favicon16) dom.favicons.favicon16.href = `${iconPath}/favicon-16x16.png`;
-    if (dom.favicons.shortcutIcon) dom.favicons.shortcutIcon.href = theme === 'dark' ? 'white_icons/icon.ico' : 'icons/icon.ico';
+export function updateLogoIcon(theme) {
+    const iconPath = theme === 'dark' ? 'white_icons/logo.png' : 'icons/logo.png';
+    if (dom.logoIcon) {
+        dom.logoIcon.src = iconPath;
+    }
 }
 
 export function showContextMenu(event, menuItems) {
