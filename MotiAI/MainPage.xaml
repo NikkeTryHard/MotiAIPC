@@ -1,30 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:views="clr-namespace:MotiAI.Views"
+             xmlns:b="clr-namespace:Microsoft.AspNetCore.Components.WebView.Maui;assembly=Microsoft.AspNetCore.Components.WebView.Maui"
              x:Class="MotiAI.MainPage">
 
-    <OnIdiom x:TypeArguments="View">
-        <OnIdiom.Phone>
-            <ScrollView>
-                <VerticalStackLayout>
-                    <views:TaskListView />
-                    <views:ScheduleView />
-                </VerticalStackLayout>
-            </ScrollView>
-        </OnIdiom.Phone>
-        <OnIdiom.Tablet>
-            <Grid ColumnDefinitions="*,*">
-                <views:TaskListView Grid.Column="0" />
-                <views:ScheduleView Grid.Column="1" />
-            </Grid>
-        </OnIdiom.Tablet>
-        <OnIdiom.Desktop>
-            <Grid ColumnDefinitions="*,*">
-                <views:TaskListView Grid.Column="0" />
-                <views:ScheduleView Grid.Column="1" />
-            </Grid>
-        </OnIdiom.Desktop>
-    </OnIdiom>
+    <b:BlazorWebView HostPage="wwwroot/index.html" />
 
 </ContentPage>

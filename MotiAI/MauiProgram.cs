@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
-using MotiAI.Services;
-using MotiAI.ViewModels;
+using Microsoft.AspNetCore.Components.WebView.Maui;
 
 namespace MotiAI;
 
@@ -13,17 +12,16 @@ public static class MauiProgram
 			.UseMauiApp<App>()
 			.ConfigureFonts(fonts =>
 			{
-				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-				fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+				fonts.AddFont("Inter_28pt-Regular.ttf", "InterRegular");
+				fonts.AddFont("Inter_28pt-Bold.ttf", "InterBold");
 			});
+
+		builder.Services.AddMauiBlazorWebView();
 
 #if DEBUG
 		builder.Logging.AddDebug();
+		builder.Services.AddBlazorWebViewDeveloperTools();
 #endif
-
-		builder.Services.AddSingleton<ApiService>();
-		builder.Services.AddSingleton<MainPageViewModel>();
-		builder.Services.AddSingleton<MainPage>();
 
 		return builder.Build();
 	}

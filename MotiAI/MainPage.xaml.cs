@@ -1,12 +1,9 @@
-﻿using MotiAI.ViewModels;
-
-namespace MotiAI;
+﻿namespace MotiAI;
 
 public partial class MainPage : ContentPage
 {
-	public MainPage(MainPageViewModel viewModel)
+	public MainPage()
 	{
 		InitializeComponent();
-		BindingContext = viewModel;
 	}
 }
