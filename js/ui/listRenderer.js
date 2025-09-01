@@ -3,7 +3,6 @@ import { state, getActiveTab } from '../state.js';
 
 // --- TASK LIST UI (Initial & Full Renders) ---
 export function renderTabs() {
-  console.log('MotiAI_TABS: Rendering all tabs.');
   const tabs = dom.taskTabsNav.querySelectorAll('.task-tab');
   tabs.forEach((tab) => tab.remove());
 
@@ -29,7 +28,6 @@ export function renderActiveTabContent(isPartialUpdate = false) {
       updateProgress();
       return;
     }
-    console.log(`MotiAI_TASKS: Rendering content for tab "${activeTab.title}"`);
     dom.mainTitleText.textContent = activeTab.mainTitle || "Today's Momentum";
 
     if (activeTab.sections.length > 0) {

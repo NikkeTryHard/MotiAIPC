@@ -49,13 +49,11 @@ const buildLookups = () => {
 
 // --- STATE PERSISTENCE ---
 const _saveState = () => {
-  console.log('MotiAI_STATE: Saving state to localStorage...');
   try {
     const stateToSave = { ...state };
     delete stateToSave.timeIndicatorInterval; // Don't save interval ID
     localStorage.setItem('motiAIState', JSON.stringify(stateToSave));
-  } catch (error) {
-    console.error('MotiAI_STATE: CRITICAL - Failed to save state.', error);
+  } catch {
     showToast('Error saving data. Changes may be lost.', 'error');
   }
 };
@@ -64,7 +62,6 @@ const _saveState = () => {
 export const saveState = debounce(_saveState, 500);
 
 export const loadState = async () => {
-  console.log('MotiAI_STATE: Loading state...');
   let savedState = localStorage.getItem('motiAIState');
   if (!savedState) {
     savedState = localStorage.getItem('motiOSState');
@@ -78,9 +75,6 @@ export const loadState = async () => {
       state = JSON.parse(savedState);
       // Migration for old data structures
       if (state.sections && !state.tabs) {
-        console.log(
-          'MotiAI_STATE: Old state format detected. Migrating to new tabbed structure.'
-        );
         state = {
           activeTabId: 'tab-migrated-1',
           tabs: [
@@ -100,12 +94,7 @@ export const loadState = async () => {
       state.tabs.forEach((tab) => {
         if (!tab.mainTitle) tab.mainTitle = "Today's Momentum";
       });
-      console.log('MotiAI_STATE: SUCCESS - Loaded state from localStorage.');
-    } catch (error) {
-      console.error(
-        'MotiAI_STATE: CRITICAL - Failed to parse state. Will attempt to load from file.',
-        error
-      );
+    } catch {
       showToast('Could not load saved data. Loading defaults.', 'error');
       state = {}; // Reset state before loading from file
     }
@@ -128,12 +117,7 @@ export const loadState = async () => {
         ],
         events: loadedData.events || {},
       };
-      console.log("MotiAI_STATE: SUCCESS - Loaded state from 'tasks.json'.");
-    } catch (error) {
-      console.warn(
-        `MotiAI_STATE: INFO - Could not fetch 'tasks.json'. Using fallback.`,
-        error
-      );
+    } catch {
       showToast('Welcome! Creating a new workspace for you.', 'info');
       state = {
         activeTabId: 'tab-fb-1',
