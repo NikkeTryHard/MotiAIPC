@@ -30,3 +30,11 @@ pnpm-debug.log*
 # OS generated files
 .DS_Store
 Thumbs.db
+# .NET and Visual Studio
+[Bb]in/
+[Oo]bj/
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
